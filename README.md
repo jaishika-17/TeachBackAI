@@ -1,5 +1,5 @@
-# TeachBackAI-
-# 🧠 TeachBack AI
+
+#  TeachBack AI
 
 ### **Learn by Teaching. Understand by Explaining.**
 
