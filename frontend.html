@@ -1,4 +1,4 @@
-<!doctype html>
+<!-- <!doctype html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -855,6 +855,2050 @@ async function renderPerformanceTab(content) {
       </div>`));
     });
     content.appendChild(ledger);
+
+    const section = h(`<section class="weak-areas"><h2>Revision list</h2></section>`);
+    if (!weakAreas.length) {
+      section.appendChild(h(`<p class="progress-page__empty">No open gaps right now -- nice work.</p>`));
+    } else {
+      const ul = h(`<ul></ul>`);
+      weakAreas.forEach(w => ul.appendChild(h(`<li><span class="weak-areas__concept">${esc(w.concept_name)}</span><span class="weak-areas__desc">${esc(w.description)}</span></li>`)));
+      section.appendChild(ul);
+    }
+    content.appendChild(section);
+  } catch (err) {
+    content.appendChild(h(`<div class="error-banner">Couldn't load your performance -- ${esc(err.message)}</div>`));
+  }
+}
+
+/* ---------------- Boot ---------------- */
+checkApi();
+renderNav();
+render();
+if (view === "session" && session && (session.stage === "loading" || session.stage === "error")) {
+  if (session.retry === "finish") finishQuiz(); else loadNextQuestion();
+}
+</script>
+</body>
+</html> -->
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- <!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TeachBack AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink:#132119; --ink-soft:#24392f; --rule:#5c7168; --chalk:#f2f0e5; --chalk-dim:#e2e0d1;
+  --paper:#fbfaf4; --ink-on-paper:#1c2b25; --marker:#d99a2b; --marker-deep:#a9701a; --marker-soft:#f3dfb0;
+  --verified:#3f8f78; --verified-deep:#2c6a58; --verified-soft:#d9ece5;
+  --alert:#b8503a; --alert-deep:#8f3c2a; --alert-soft:#f3dcd4;
+  --font-display:"Fraunces","Iowan Old Style",serif; --font-body:"IBM Plex Sans","Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono","SFMono-Regular",monospace;
+  --radius-sm:3px; --radius-md:10px; --radius-lg:18px; --rail-width:236px;
+  --shadow-sm: 0 1px 2px rgba(19,33,25,.07), 0 1px 1px rgba(19,33,25,.04);
+  --shadow-md: 0 10px 24px rgba(19,33,25,.10), 0 2px 6px rgba(19,33,25,.06);
+  --shadow-lg: 0 24px 56px rgba(19,33,25,.20), 0 6px 18px rgba(19,33,25,.12);
+  --ease: cubic-bezier(.2,.7,.3,1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin:0; background:var(--chalk); color:var(--ink-on-paper); font-family:var(--font-body);
+  font-size:16px; line-height:1.55; position:relative; -webkit-font-smoothing:antialiased;
+}
+body::before {
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.5; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+#root, .navbar, .api-bar { position:relative; z-index:1; }
+h1,h2,h3 { font-family:var(--font-display); font-weight:500; margin:0; color:var(--ink); letter-spacing:-.01em; }
+p { margin:0; }
+button { font-family: var(--font-body); }
+:focus-visible { outline: 2px solid var(--marker-deep); outline-offset: 2px; }
+
+.btn { display:inline-flex; align-items:center; gap:.5em; border:1.5px solid var(--ink); background:var(--ink); color:var(--chalk);
+  font-weight:500; font-size:.95rem; padding:.7em 1.4em; border-radius:var(--radius-md); cursor:pointer;
+  transition: transform .12s var(--ease), box-shadow .18s var(--ease), background .18s var(--ease); box-shadow: var(--shadow-sm); }
+.btn:hover { background: var(--ink-soft); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(.98); }
+.btn:disabled { opacity:.4; cursor:not-allowed; box-shadow:none; transform:none; }
+.btn-ghost { background:transparent; color:var(--ink); border-color:var(--rule); box-shadow:none; }
+.btn-ghost:hover { background: var(--paper); border-color: var(--ink); }
+.btn-marker { background: var(--marker); border-color: var(--marker-deep); color: var(--ink); }
+.btn-marker:hover { background: var(--marker-deep); color: var(--chalk); }
+.btn-small { padding:.45em 1em; font-size:.82rem; border-radius:var(--radius-sm); }
+
+textarea, input {
+  font-family: var(--font-body); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-sm);
+  padding:.8em .85em; background: var(--paper); color: var(--ink-on-paper); width:100%; font-size:.96rem;
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+textarea:focus, input:focus { border-color: var(--marker-deep); outline: none; box-shadow: 0 0 0 3px rgba(169,112,26,.14); }
+label { font-size:.82rem; color: var(--ink-soft); font-weight:500; display:block; margin-bottom:.35rem; }
+.field { margin-bottom: 1.1rem; }
+.page { max-width: 920px; margin:0 auto; padding: 2.75rem 1.5rem 5.5rem; }
+.eyebrow-free-label { font-size:.82rem; color: var(--rule); }
+
+/* ---- Nav ---- */
+.navbar {
+  background: var(--ink); color: var(--chalk); display:flex; align-items:center; justify-content:space-between;
+  padding: 1rem 1.75rem; position: sticky; top:0; z-index:20; box-shadow: 0 1px 0 rgba(0,0,0,.25), 0 6px 18px rgba(0,0,0,.12);
+}
+.navbar__wordmark { display:flex; align-items:center; gap:.55rem; font-family: var(--font-display); font-size:1.3rem;
+  background:none; border:none; color:var(--chalk); cursor:pointer; padding:0; }
+.navbar__wordmark span { color: var(--marker); }
+.navbar__mark { width:22px; height:22px; flex-shrink:0; }
+.navbar__links { display:flex; gap:1.5rem; align-items:center; }
+.navbar__links button.link { position:relative; background:none; border:none; color: var(--chalk-dim); padding:.35rem 0; cursor:pointer; font-size:.95rem; transition: color .15s var(--ease); }
+.navbar__links button.link::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; background:var(--marker); transform: scaleX(0); transform-origin: left; transition: transform .2s var(--ease); }
+.navbar__links button.link:hover { color: var(--chalk); }
+.navbar__links button.link.is-active { color: var(--chalk); }
+.navbar__links button.link.is-active::after { transform: scaleX(1); }
+.navbar__avatar { width:1.85rem; height:1.85rem; border-radius:50%; background: var(--marker); color: var(--ink);
+  display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:600; flex-shrink:0; }
+.navbar__logout { border:1px solid rgba(238,241,230,.3); background:transparent; color:var(--chalk-dim); border-radius:var(--radius-sm); padding:.4em .85em; font-size:.82rem; cursor:pointer; transition: all .15s var(--ease); }
+.navbar__logout:hover { color: var(--chalk); border-color: var(--chalk-dim); background: rgba(238,241,230,.06); }
+
+.api-bar { background: var(--paper); border-bottom: 1.5px solid var(--chalk-dim); font-size:.82rem; padding: .55rem 1.5rem; display:flex; gap:.6rem; align-items:center; color: var(--ink-soft); }
+.api-bar input { flex: 0 1 320px; padding: .35em .55em; font-family: var(--font-mono); font-size: .8rem; }
+.api-bar__dot { width:.55rem; height:.55rem; border-radius:50%; background: var(--alert); flex-shrink:0; box-shadow: 0 0 0 3px rgba(184,80,58,.15); transition: all .2s var(--ease); }
+.api-bar__dot.ok { background: var(--verified); box-shadow: 0 0 0 3px rgba(63,143,120,.15); }
+
+/* ---- Auth ---- */
+.auth-page { max-width: 1020px; margin: 0 auto; padding: 4rem 1.5rem 5rem; display:grid; grid-template-columns: 1.05fr 1fr; gap: 3.5rem; align-items:center; }
+.auth-page__intro { position:relative; }
+.auth-page__intro h1 { font-size: clamp(2.2rem, 3vw + 1rem, 2.75rem); line-height:1.14; margin-bottom: 1.1rem; }
+.auth-page__intro p { color: var(--ink-soft); max-width: 40ch; }
+.auth-page__lines { margin-top:2.5rem; display:flex; flex-direction:column; gap:.9rem; max-width:36ch; }
+.auth-page__line { display:flex; gap:.7rem; align-items:flex-start; font-size:.92rem; color: var(--ink-soft); }
+.auth-page__line b { color: var(--ink); font-weight:600; }
+.auth-page__dot { width:.45rem; height:.45rem; border-radius:50%; background: var(--marker); margin-top:.5rem; flex-shrink:0; }
+.auth-card { background: var(--paper); border: 1.5px solid var(--chalk-dim); border-top: 5px solid var(--marker-deep); border-radius: var(--radius-md); padding: 2.1rem 2.2rem; box-shadow: var(--shadow-lg); }
+.auth-card__tab { font-size:.78rem; color: var(--rule); margin-bottom:.35rem; }
+.auth-card h2 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+.auth-card__switch { margin-top: 1.3rem; font-size: .88rem; color: var(--ink-soft); text-align:center; }
+.auth-card__switch button { background:none; border:none; color: var(--marker-deep); font-weight:600; cursor:pointer; padding:0; font-size:.88rem; text-decoration: underline; text-underline-offset:2px; }
+.auth-card__error { background: var(--alert-soft); border:1px solid var(--alert); color: var(--alert-deep); padding:.7rem .95rem; border-radius: var(--radius-sm); font-size:.85rem; margin-bottom:1.1rem; }
+.auth-card__row { display:flex; gap:.8rem; }
+.auth-card__row .field { flex:1; }
+
+/* ---- Hero ---- */
+.hero { display:grid; grid-template-columns: 1.15fr .85fr; gap:2.5rem; align-items:center; padding: 1rem 0 3rem; border-bottom: 1.5px solid var(--chalk-dim); }
+.hero__welcome { font-family: var(--font-mono); font-size:.82rem; color: var(--marker-deep); margin: 0 0 .9rem; }
+.hero__text h1 { font-size:clamp(2rem, 2.6vw + 1rem, 2.7rem); line-height:1.14; margin-bottom:1.1rem; max-width:16ch; }
+.hero__text p { max-width:44ch; color: var(--ink-soft); }
+.hero__cta { margin-top:1.4rem; }
+.hero-flow { display:flex; flex-direction:column; gap:0; background: var(--paper); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-lg); padding:1.4rem 1.5rem; box-shadow: var(--shadow-md); }
+.hero-flow__title { font-size:.78rem; color: var(--rule); margin-bottom:.9rem; font-weight:500; }
+.hero-flow__step { display:flex; align-items:center; gap:.8rem; padding:.55rem 0; position:relative; }
+.hero-flow__num { width:1.7rem; height:1.7rem; border-radius:50%; border:1.5px solid var(--rule); display:flex; align-items:center; justify-content:center; font-size:.78rem; font-family:var(--font-mono); color: var(--ink-soft); flex-shrink:0; background: var(--chalk); z-index:1; }
+.hero-flow__step:nth-child(1) .hero-flow__num { border-color: var(--marker-deep); color: var(--marker-deep); }
+.hero-flow__step span:last-child { font-size:.92rem; color: var(--ink); }
+.hero-flow__line { position:absolute; left:.85rem; top:100%; width:1.5px; height:.55rem; background: var(--chalk-dim); }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; } }
+
+.library { padding-top:3rem; }
+.library__header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:1.6rem; flex-wrap:wrap; gap:.5rem; }
+.library__grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(250px,1fr)); gap:1.2rem; }
+.concept-card {
+  background: var(--paper); border:1.5px solid var(--chalk-dim); border-top:6px solid var(--rule); border-radius: var(--radius-md);
+  padding:1.2rem 1.3rem 1.4rem; display:flex; flex-direction:column; gap:.6rem; box-shadow: var(--shadow-sm);
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
+}
+.concept-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+.concept-card[data-difficulty="beginner"] { border-top-color: var(--verified); }
+.concept-card[data-difficulty="intermediate"] { border-top-color: var(--marker-deep); }
+.concept-card__top { display:flex; align-items:center; gap:.65rem; }
+.concept-card__badge { width:2rem; height:2rem; border-radius:50%; background: var(--chalk-dim); color: var(--ink-soft); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:.82rem; font-weight:600; flex-shrink:0; }
+.concept-card__tab { font-size:.8rem; color: var(--rule); }
+.concept-card h3 { font-size:1.18rem; }
+.concept-card p { color: var(--ink-soft); font-size:.92rem; flex-grow:1; }
+.concept-card__foot { display:flex; justify-content:space-between; align-items:center; margin-top:.4rem; }
+.concept-card__difficulty { font-size:.82rem; color: var(--rule); display:flex; align-items:center; gap:.4rem; }
+.concept-card__difficulty::before { content:""; width:.45rem; height:.45rem; border-radius:50%; background: currentColor; opacity:.6; }
+.start-panel { position: sticky; bottom: 1.25rem; margin-top: 2.5rem; }
+.start-panel__inner { background: var(--ink); color: var(--chalk); border-radius: var(--radius-lg); padding: 1.5rem 1.7rem; box-shadow: var(--shadow-lg); }
+.start-panel__inner h3 { color: var(--chalk); font-size:1.25rem; margin-bottom:.45rem; }
+.start-panel__inner p { color: var(--chalk-dim); font-size:.92rem; margin:.3rem 0; }
+.start-panel__question { margin-top:1rem; font-weight:500; color: var(--chalk); }
+.start-panel__hint { font-size: .78rem; color: var(--chalk-dim); margin-top: -.4rem; opacity:.85; }
+.start-panel__scale { display:flex; gap:.55rem; margin:.75rem 0 .3rem; }
+.scale-dot { width:2.4rem; height:2.4rem; border-radius:50%; border:1.5px solid rgba(238,241,230,.35); background:transparent; color:var(--chalk); cursor:pointer; font-family:var(--font-mono); font-size:.95rem; transition: all .15s var(--ease); }
+.scale-dot:hover { border-color: var(--marker); }
+.scale-dot.is-selected { background: var(--marker); border-color: var(--marker); color: var(--ink); font-weight:600; transform: scale(1.08); box-shadow: 0 4px 12px rgba(217,154,43,.35); }
+.start-panel__actions { display:flex; justify-content:flex-end; gap:.75rem; margin-top: 1.2rem;}
+
+/* ---- Session ---- */
+.session-page { display:grid; grid-template-columns: var(--rail-width) 1fr; gap:2.5rem; align-items:start; }
+.stage-rail { background: var(--ink); color: var(--chalk); border-radius: var(--radius-lg); padding:1.5rem 1.3rem; position: sticky; top: 5.5rem; box-shadow: var(--shadow-md); }
+.stage-rail ol { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:0; position:relative; }
+.stage-rail ol::before { content:""; position:absolute; left:.75rem; top:.75rem; bottom:.75rem; width:1.5px; background: rgba(238,241,230,.16); }
+.stage-rail li { display:flex; align-items:flex-start; gap:.75rem; font-size:.9rem; color: var(--chalk-dim); padding:.6rem 0; position:relative; }
+.stage-rail__marker { flex-shrink:0; width:1.5rem; height:1.5rem; border-radius:50%; border:1.5px solid var(--rule); display:flex; align-items:center; justify-content:center; font-size:.75rem; background: var(--ink); z-index:1; transition: all .2s var(--ease); }
+.stage-rail li[data-state="active"] { color: var(--chalk); }
+.stage-rail li[data-state="active"] .stage-rail__marker { background: var(--marker); border-color: var(--marker); color: var(--ink); box-shadow: 0 0 0 4px rgba(217,154,43,.18); }
+.stage-rail li[data-state="done"] .stage-rail__marker { background: var(--verified); border-color: var(--verified); color: var(--ink); }
+.stage-rail__attempt { margin: 1.1rem 0 0; font-size:.8rem; color: var(--chalk-dim); border-top:1px solid rgba(238,241,230,.18); padding-top:.9rem; line-height:1.7; }
+.session-page__header { margin-bottom: 1.9rem; }
+.session-page__header h1 { font-size:2.05rem; margin:.25rem 0 .55rem; }
+.session-page__objective { color: var(--ink-soft); max-width:60ch; }
+.teach-form__prompt { display:flex; gap:.75rem; margin-bottom:.75rem; }
+.teach-form__role { font-family: var(--font-mono); font-size:.78rem; border:1px solid var(--rule); border-radius:2px; padding:.2em .55em; color: var(--ink-soft); }
+.teach-form__role--ai { border-color: var(--marker-deep); color: var(--marker-deep); }
+.teach-form__instruction { color: var(--ink-soft); margin-bottom:1.1rem; }
+.teach-form textarea { font-family: var(--font-mono); font-size:.94rem; resize:vertical; }
+.teach-form__actions { display:flex; justify-content:flex-end; margin-top:1.1rem; gap:.75rem; }
+.diagnosis__block { background: var(--paper); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-md); padding:1.35rem 1.5rem; margin-bottom:1.3rem; box-shadow: var(--shadow-sm); }
+.diagnosis__block h2 { font-size:1.08rem; margin-bottom:1rem; }
+.diagnosis__status { margin-top:1rem; color: var(--ink-soft); }
+.score-bars__row { display:grid; grid-template-columns: 11rem 1fr 3.2rem; align-items:center; gap:.75rem; margin-bottom:.6rem; font-size:.9rem; }
+.score-bars__track { height:9px; background: var(--chalk-dim); border-radius:6px; overflow:hidden; }
+.score-bars__fill { height:100%; background: var(--verified); border-radius:6px; transition: width .5s var(--ease); }
+.score-bars__fill[data-low="true"] { background: var(--alert); }
+.score-bars__value { text-align:right; font-family: var(--font-mono); font-size:.82rem; }
+.gap-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.65rem; }
+.gap-list li { display:flex; gap:.6rem; align-items:baseline; font-size:.92rem; }
+.gap-list__badge { flex-shrink:0; font-size:.72rem; padding:.15em .5em; border-radius:3px; border:1px solid var(--rule); color: var(--ink-soft); white-space:nowrap; }
+.gap-list li[data-type="MISCONCEPTION"] .gap-list__badge { border-color: var(--alert-deep); color: var(--alert-deep); }
+.gap-list li[data-type="REASONING_GAP"] .gap-list__badge { border-color: var(--marker-deep); color: var(--marker-deep); }
+.gap-list__empty { color: var(--ink-soft); }
+.challenge-card__question { font-family: var(--font-display); font-size:1.2rem; font-style:italic; line-height:1.4; margin-bottom:.7rem; }
+.level-badge { display:inline-block; font-family: var(--font-mono); font-size:.72rem; letter-spacing:.02em; border:1px solid var(--rule); color: var(--ink-soft); border-radius:3px; padding:.15em .55em; margin-bottom:1rem; }
+.level-badge[data-level="advanced"] { border-color: var(--marker-deep); color: var(--marker-deep); }
+.challenge-verdict { display:inline-flex; align-items:center; gap:.4rem; font-family: var(--font-mono); font-size:.85rem; padding:.3em .75em; border-radius:4px; margin-bottom:1rem; }
+.challenge-verdict--correct { background: var(--verified-soft); color: var(--verified-deep); }
+.challenge-verdict--partial { background: var(--marker-soft); color: var(--marker-deep); }
+.challenge-verdict--incorrect { background: var(--alert-soft); color: var(--alert-deep); }
+.combined-answer { border-left: 3px solid var(--marker-deep); background: var(--marker-soft); padding: 1rem 1.15rem; border-radius: var(--radius-sm); font-size: .95rem; margin: 1rem 0; line-height:1.6; }
+.combined-answer strong { color: var(--ink); }
+.repair-panel__block { margin-bottom:.9rem; }
+.repair-panel__block h4 { font-size:.82rem; color: var(--rule); margin:0 0 .25rem; }
+.repair-panel__mini { border-top:1px dashed var(--chalk-dim); padding-top:.75rem; font-size:.92rem; }
+.repair-panel__mini summary { cursor:pointer; font-weight:500; }
+.verified-panel { background: var(--paper); border:1.5px solid var(--verified); border-radius: var(--radius-md); padding:1.85rem 2rem; box-shadow: var(--shadow-md); }
+.verified-panel h2 { color: var(--verified-deep); margin-bottom:.6rem; }
+.more-detail-prompt { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px dashed var(--chalk-dim); }
+.more-detail-prompt p { font-weight: 500; margin-bottom: .8rem; }
+.thanks-panel { text-align:center; padding: 1.5rem 0; }
+.thanks-panel h3 { font-size: 1.3rem; margin-bottom: .5rem; }
+.thanks-panel p { color: var(--ink-soft); margin-bottom: 1.2rem; }
+.retry-link { margin-top: .9rem; font-size: .85rem; text-align:center; }
+.retry-link button { background:none; border:none; color: var(--rule); text-decoration:underline; cursor:pointer; font-size:.85rem; }
+
+/* ---- Written questions ---- */
+.written-q { margin-bottom: 1.4rem; }
+.written-q label { font-size:.95rem; color: var(--ink); font-weight:500; margin-bottom:.4rem; }
+.written-q textarea { min-height: 5.2rem; }
+.review-list__line.written-answer { white-space: pre-wrap; }
+
+/* ---- Quiz ---- */
+.quiz-meta { font-family: var(--font-mono); font-size:.8rem; color: var(--rule); margin:.2rem 0 1rem; }
+.option-list { display:flex; flex-direction:column; gap:.65rem; margin: 1.1rem 0 .5rem; }
+.option-btn { display:flex; gap:.85rem; align-items:center; text-align:left; width:100%; background: var(--paper); color: var(--ink-on-paper); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-md); padding:.75em 1em; font-size:.95rem; cursor:pointer; transition: all .15s var(--ease); }
+.option-btn:hover:not(:disabled) { border-color: var(--rule); background: var(--chalk); }
+.option-btn:disabled { cursor: default; }
+.option-btn__letter { font-family: var(--font-mono); font-size:.78rem; color: var(--ink-soft); flex-shrink:0; width:1.7rem; height:1.7rem; border-radius:50%; border:1.5px solid var(--chalk-dim); display:flex; align-items:center; justify-content:center; transition: all .15s var(--ease); }
+.option-btn.is-selected { border-color: var(--marker-deep); background: var(--marker-soft); }
+.option-btn.is-selected .option-btn__letter { border-color: var(--marker-deep); background: var(--marker); color: var(--ink); }
+.option-btn.is-correct { border-color: var(--verified); background: var(--verified-soft); }
+.option-btn.is-correct .option-btn__letter { border-color: var(--verified); background: var(--verified); color: var(--paper); }
+.option-btn.is-wrong { border-color: var(--alert); background: var(--alert-soft); }
+.option-btn.is-wrong .option-btn__letter { border-color: var(--alert); background: var(--alert); color: var(--paper); }
+.option-btn__tag { margin-left:auto; font-size:.75rem; font-family: var(--font-mono); white-space:nowrap; }
+.final-score { font-family: var(--font-display); font-size: 2.8rem; color: var(--ink); margin: .3rem 0 .7rem; }
+.final-score small { font-size: 1rem; color: var(--rule); font-family: var(--font-body); }
+.review-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1rem; }
+.review-list li { border-left:4px solid var(--alert); background: var(--paper); border-radius:var(--radius-sm); padding:.9rem 1.1rem; font-size:.92rem; box-shadow: var(--shadow-sm); }
+.review-list li[data-correct="true"] { border-left-color: var(--verified); }
+.review-list__q { font-weight:600; margin-bottom:.4rem; color: var(--ink); }
+.review-list__line { color: var(--ink-soft); }
+.review-list__line strong { color: var(--ink); }
+.review-list__why { margin-top:.45rem; color: var(--ink-soft); font-size:.88rem; }
+.final-actions { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:1.6rem; }
+
+/* ---- Dashboard ---- */
+.dashboard-page h1 { font-size:2.05rem; margin-bottom: 1.6rem; }
+.dash-tabs { display:flex; gap: .3rem; border-bottom: 1.5px solid var(--chalk-dim); margin-bottom: 2.1rem; }
+.dash-tabs button { background:none; border:none; padding: .65em 1.1em; font-size: .92rem; color: var(--ink-soft); cursor:pointer; border-bottom: 2px solid transparent; margin-bottom:-1.5px; transition: all .15s var(--ease); }
+.dash-tabs button:hover { color: var(--ink); }
+.dash-tabs button.is-active { color: var(--ink); border-bottom-color: var(--marker); font-weight: 500; }
+.profile-card { background: var(--paper); border: 1.5px solid var(--chalk-dim); border-radius: var(--radius-md); padding: 1.8rem 1.9rem; max-width: 480px; box-shadow: var(--shadow-sm); }
+.profile-card__avatar { width:3.2rem; height:3.2rem; border-radius:50%; background: var(--ink); color: var(--marker-soft); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.25rem; margin-bottom:1.1rem; }
+.profile-card__row { display:flex; justify-content:space-between; padding: .6rem 0; border-bottom: 1px solid var(--chalk-dim); font-size: .92rem; }
+.profile-card__row:last-of-type { border-bottom: none; }
+.profile-card__label { color: var(--rule); }
+.progress-page__intro { color: var(--ink-soft); margin-bottom:2rem; }
+.progress-page__empty { color: var(--ink-soft); }
+.ledger { border-top: 1.5px solid var(--chalk-dim); }
+.ledger__row { display:grid; grid-template-columns: 14rem 1fr 3.4rem 6.2rem; align-items:center; gap:1rem; padding:.95rem 0; border-bottom:1.5px solid var(--chalk-dim); transition: background .15s var(--ease); }
+.ledger__row:hover { background: rgba(251,250,244,.6); }
+.ledger__name { display:flex; flex-direction:column; gap:.3rem; font-weight:500; }
+.ledger__status { display:inline-flex; align-self:flex-start; font-size:.72rem; font-weight:500; padding:.15em .55em; border-radius:20px; background: var(--chalk-dim); color: var(--rule); }
+.ledger__status--verified { color: var(--verified-deep); background: var(--verified-soft); }
+.ledger__status--needs_reinforcement { color: var(--marker-deep); background: var(--marker-soft); }
+.ledger__bar { height:9px; background: var(--chalk-dim); border-radius:6px; overflow:hidden; }
+.ledger__fill { height:100%; background: var(--verified); border-radius:6px; }
+.ledger__score { font-family: var(--font-mono); font-size:.85rem; text-align:right; }
+.ledger__attempts { font-size:.8rem; color: var(--rule); text-align:right; }
+.history-table { width:100%; border-collapse: collapse; font-size: .9rem; }
+.history-table th { text-align:left; font-weight:500; color: var(--rule); font-size: .78rem; padding: .55rem .4rem; border-bottom: 1.5px solid var(--chalk-dim); }
+.history-table td { padding: .7rem .4rem; border-bottom: 1px solid var(--chalk-dim); }
+.history-table tr:hover td { background: var(--paper); }
+.weak-areas { margin-top:3.2rem; }
+.weak-areas h2 { font-size:1.25rem; margin-bottom:1.1rem; }
+.weak-areas ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.9rem; }
+.weak-areas li { background: var(--paper); border-left:3px solid var(--marker-deep); border-radius:var(--radius-sm); padding:.8rem 1.1rem; display:flex; flex-direction:column; gap:.25rem; box-shadow: var(--shadow-sm); }
+.weak-areas__concept { font-size:.78rem; color: var(--rule); }
+.weak-areas__desc { font-size:.92rem; }
+.error-banner { background: var(--alert-soft); border:1px solid var(--alert); color: var(--alert-deep); padding:.85rem 1.05rem; border-radius: var(--radius-sm); margin-bottom:1.5rem; font-size:.9rem; }
+@media (max-width: 760px) { .session-page { grid-template-columns: 1fr; } .stage-rail { position: static; } }
+@media (max-width: 720px) { .auth-page { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .ledger__row { grid-template-columns: 1fr; gap:.5rem; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; } }
+</style>
+</head>
+<body>
+<header class="navbar">
+  <button class="navbar__wordmark" onclick="go('home')">
+    <svg class="navbar__mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M4 8.5 12 4l8 4.5-8 4.5-8-4.5Z" stroke="#eef1e6" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M7 10.3V15c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.7" stroke="#d99a2b" stroke-width="1.4" stroke-linejoin="round"/>
+    </svg>
+    TeachBack <span>AI</span>
+  </button>
+  <nav class="navbar__links" id="nav-links"></nav>
+</header>
+<div class="api-bar">
+  <span class="api-bar__dot" id="api-dot"></span>
+  <span>Backend:</span>
+  <input id="api-url" value="http://localhost:8000" />
+  <button class="btn btn-ghost btn-small" id="api-check">Check connection</button>
+</div>
+<main id="root"></main>
+
+<script>
+/* ---------------- API client ---------------- */
+function apiBase() { return document.getElementById("api-url").value.replace(/\/$/, ""); }
+
+async function api(path, { method = "GET", body } = {}) {
+  const res = await fetch(apiBase() + path, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    throw new Error(detail);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+async function checkApi() {
+  const dot = document.getElementById("api-dot");
+  try { await api("/health"); dot.classList.add("ok"); }
+  catch { dot.classList.remove("ok"); }
+}
+document.getElementById("api-check").onclick = checkApi;
+
+/* ---------------- Auth state ---------------- */
+let auth = null; // { id, username, name }
+try {
+  const stored = localStorage.getItem("teachback_auth");
+  if (stored) auth = JSON.parse(stored);
+} catch {}
+
+function persistAuth() {
+  try { localStorage.setItem("teachback_auth", JSON.stringify(auth)); } catch {}
+}
+function logout() {
+  auth = null;
+  session = null;
+  try { localStorage.removeItem("teachback_auth"); } catch {}
+  go("auth");
+}
+
+function initials(name) {
+  return (name || "?").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+}
+
+/* ---------------- App state ---------------- */
+let view = auth ? "home" : "auth";
+let authMode = "login"; // login | register
+let concepts = [];
+let session = null;
+let dashTab = "profile";
+
+// A page reload (or an editor "live reload") used to wipe the in-memory session and drop
+// the learner on the home page. The active quiz is now saved and restored.
+try {
+  const saved = JSON.parse(localStorage.getItem("teachback_state") || "null");
+  if (auth && saved && saved.view === "session" && saved.session) { view = "session"; session = saved.session; }
+} catch {}
+function saveState() {
+  try {
+    if (view === "session" && session) localStorage.setItem("teachback_state", JSON.stringify({ view, session }));
+    else localStorage.removeItem("teachback_state");
+  } catch {}
+}
+
+function h(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
+function esc(s) { return (s ?? "").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+function go(v) {
+  if (v !== "auth" && !auth) v = "auth";
+  if (v !== "session") session = null;   // leaving the quiz always starts fresh next time
+  view = v;
+  renderNav();
+  render();
+  window.scrollTo(0, 0);
+}
+
+function renderNav() {
+  const nav = document.getElementById("nav-links");
+  nav.innerHTML = "";
+  if (!auth) return;
+  const conceptsBtn = h(`<button class="link ${view==='home'?'is-active':''}">Concepts</button>`);
+  conceptsBtn.onclick = () => go("home");
+  const dashBtn = h(`<button class="link ${view==='dashboard'?'is-active':''}">Dashboard</button>`);
+  dashBtn.onclick = () => go("dashboard");
+  const avatar = h(`<span class="navbar__avatar" title="${esc(auth.name || auth.username)}">${esc(initials(auth.name || auth.username))}</span>`);
+  const logoutBtn = h(`<button class="navbar__logout">Log out</button>`);
+  logoutBtn.onclick = logout;
+  nav.appendChild(conceptsBtn);
+  nav.appendChild(dashBtn);
+  nav.appendChild(avatar);
+  nav.appendChild(logoutBtn);
+}
+
+/* ---------------- Rendering root ---------------- */
+function render() {
+  const root = document.getElementById("root");
+  root.innerHTML = "";
+  if (view === "auth") renderAuth(root);
+  else if (view === "home") renderHome(root);
+  else if (view === "session") renderSession(root);
+  else if (view === "dashboard") renderDashboard(root);
+  saveState();
+}
+
+/* ================= AUTH ================= */
+function renderAuth(root) {
+  const wrap = h(`<div class="auth-page">
+    <div class="auth-page__intro">
+      <h1>Learn by teaching.<br/>Understand by explaining.</h1>
+      <p>Sign in to keep your knowledge profile, teaching history, and progress across visits -- TeachBack AI remembers exactly where each concept stood.</p>
+      <div class="auth-page__lines">
+        <div class="auth-page__line"><span class="auth-page__dot"></span><span>Explain a concept <b>in your own words</b> before any quiz begins.</span></div>
+        <div class="auth-page__line"><span class="auth-page__dot"></span><span>TeachBack AI plays the student and <b>finds the exact gap</b> in your reasoning.</span></div>
+        <div class="auth-page__line"><span class="auth-page__dot"></span><span>Every attempt is saved to a <b>ledger</b> you can revisit on your dashboard.</span></div>
+      </div>
+    </div>
+    <div class="auth-card" id="auth-card"></div>
+  </div>`);
+  root.appendChild(wrap);
+  renderAuthCard(wrap.querySelector("#auth-card"));
+}
+
+function renderAuthCard(mount) {
+  mount.innerHTML = "";
+  if (authMode === "login") {
+    const card = h(`<div>
+      <div class="auth-card__tab">Class register</div>
+      <h2>Log in</h2>
+      <div id="err"></div>
+      <form id="form">
+        <div class="field"><label>Username</label><input name="username" required autocomplete="username" /></div>
+        <div class="field"><label>Password</label><input name="password" type="password" required autocomplete="current-password" /></div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="btn btn-marker">Log in</button>
+        </div>
+      </form>
+      <p class="auth-card__switch">New here? <button id="switch">Create an account</button></p>
+    </div>`);
+    card.querySelector("#switch").onclick = () => { authMode = "register"; renderAuthCard(mount); };
+    card.querySelector("#form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const btn = e.target.querySelector("button[type=submit]");
+      btn.disabled = true; btn.textContent = "Logging in…";
+      try {
+        const student = await api("/auth/login", { method: "POST", body: { username: fd.get("username"), password: fd.get("password") } });
+        auth = { id: student.id, username: student.username, name: student.name };
+        persistAuth();
+        go("home");
+      } catch (err) {
+        card.querySelector("#err").innerHTML = "";
+        card.querySelector("#err").appendChild(h(`<div class="auth-card__error">${esc(err.message)}</div>`));
+        btn.disabled = false; btn.textContent = "Log in";
+      }
+    };
+    mount.appendChild(card);
+  } else {
+    const card = h(`<div>
+      <div class="auth-card__tab">Class register</div>
+      <h2>Create an account</h2>
+      <div id="err"></div>
+      <form id="form">
+        <div class="field"><label>Full name</label><input name="name" required /></div>
+        <div class="auth-card__row">
+          <div class="field"><label>Username</label><input name="username" required autocomplete="username" minlength="3" /></div>
+          <div class="field"><label>Student ID (optional)</label><input name="student_code" placeholder="e.g. roll number" /></div>
+        </div>
+        <div class="field"><label>Password</label><input name="password" type="password" required autocomplete="new-password" minlength="4" /></div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="btn btn-marker">Create account</button>
+        </div>
+      </form>
+      <p class="auth-card__switch">Already registered? <button id="switch">Log in</button></p>
+    </div>`);
+    card.querySelector("#switch").onclick = () => { authMode = "login"; renderAuthCard(mount); };
+    card.querySelector("#form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const btn = e.target.querySelector("button[type=submit]");
+      btn.disabled = true; btn.textContent = "Creating…";
+      try {
+        const student = await api("/auth/register", { method: "POST", body: {
+          username: fd.get("username"), password: fd.get("password"),
+          name: fd.get("name"), student_code: fd.get("student_code") || null,
+        }});
+        auth = { id: student.id, username: student.username, name: student.name };
+        persistAuth();
+        go("home");
+      } catch (err) {
+        card.querySelector("#err").innerHTML = "";
+        card.querySelector("#err").appendChild(h(`<div class="auth-card__error">${esc(err.message)}</div>`));
+        btn.disabled = false; btn.textContent = "Create account";
+      }
+    };
+    mount.appendChild(card);
+  }
+}
+
+/* ================= HOME ================= */
+async function renderHome(root) {
+  const flowSteps = STAGES.map((s, i) =>
+    `<div class="hero-flow__step">${i < STAGES.length - 1 ? '<span class="hero-flow__line"></span>' : ''}<span class="hero-flow__num">${i + 1}</span><span>${esc(s.label)}</span></div>`
+  ).join("");
+
+  const wrap = h(`<div class="page">
+    <section class="hero">
+      <div class="hero__text">
+        <p class="hero__welcome">Welcome to TeachBack AI</p>
+        <h1>Learn by teaching.<br/>Understand by explaining.</h1>
+        <p>Pick a concept, explain it in your own words, and TeachBack AI plays the student who knows nothing. It won't just mark you right or wrong -- it will find the exact spot your explanation breaks down.</p>
+      </div>
+      <div class="hero-flow">
+        <p class="hero-flow__title">How a session runs</p>
+        ${flowSteps}
+      </div>
+    </section>
+    <section class="library">
+      <div class="library__header"><h2>Choose a concept to teach</h2><p class="eyebrow-free-label" id="count"></p></div>
+      <div id="status"></div>
+      <div class="library__grid" id="grid"></div>
+    </section>
+    <div id="start-panel-slot"></div>
+  </div>`);
+  root.appendChild(wrap);
+
+  const statusEl = wrap.querySelector("#status");
+  try {
+    concepts = await api("/concepts");
+    wrap.querySelector("#count").textContent = `${concepts.length} concepts in the MVP set`;
+  } catch (err) {
+    statusEl.appendChild(h(`<div class="error-banner">Couldn't load concepts from ${esc(apiBase())} -- ${esc(err.message)}. Make sure backend.py is running and the URL above is correct.</div>`));
+    return;
+  }
+
+  const grid = wrap.querySelector("#grid");
+  concepts.forEach(c => {
+    const card = h(`<article class="concept-card" data-difficulty="${esc(c.difficulty)}">
+      <div class="concept-card__top">
+        <span class="concept-card__badge">${esc((c.subject || "?").trim().charAt(0).toUpperCase())}</span>
+        <span class="concept-card__tab">${esc(c.subject)}</span>
+      </div>
+      <h3>${esc(c.name)}</h3>
+      <p>${esc(c.description)}</p>
+      <div class="concept-card__foot">
+        <span class="concept-card__difficulty">${esc(c.difficulty)}</span>
+        <button class="btn btn-marker btn-small">Teach this</button>
+      </div>
+    </article>`);
+    card.querySelector("button").onclick = () => showStartPanel(wrap, c);
+    grid.appendChild(card);
+  });
+}
+
+function buildWritingQuestions(detail) {
+  const fromPoints = (detail.key_points || []).map(k => k.challenge).filter(Boolean);
+  const qs = fromPoints.slice(0, 4);
+  if (qs.length < 3 && detail.learning_objective) qs.push(`In your own words, explain: ${detail.learning_objective}`);
+  return qs.slice(0, 4);
+}
+
+function showStartPanel(wrap, concept) {
+  const slot = wrap.querySelector("#start-panel-slot");
+  let confidence = null;
+  const panel = h(`<section class="start-panel">
+    <div class="start-panel__inner">
+      <h3>Before you start: ${esc(concept.name)}</h3>
+      <p>${esc(concept.description)}</p>
+      <p class="start-panel__question">How confident are you that you already understand it?</p>
+      <p class="start-panel__hint">1-3 gives you basic questions first; 4-5 starts you on harder, advanced ones.</p>
+      <div class="start-panel__scale" id="scale"></div>
+      <div class="start-panel__actions">
+        <button class="btn btn-ghost" id="cancel">Cancel</button>
+        <button class="btn btn-marker" id="go-btn" disabled>Start questions</button>
+      </div>
+    </div>
+  </section>`);
+  const scale = panel.querySelector("#scale");
+  const goBtn = panel.querySelector("#go-btn");
+  [1,2,3,4,5].forEach(n => {
+    const dot = h(`<button class="scale-dot">${n}</button>`);
+    dot.onclick = () => {
+      confidence = n;
+      scale.querySelectorAll(".scale-dot").forEach(d => d.classList.remove("is-selected"));
+      dot.classList.add("is-selected");
+      goBtn.disabled = false;
+    };
+    scale.appendChild(dot);
+  });
+  panel.querySelector("#cancel").onclick = () => { slot.innerHTML = ""; };
+  goBtn.onclick = async () => {
+    goBtn.disabled = true;
+    goBtn.textContent = "Starting…";
+    try {
+      const s = await api("/sessions", { method: "POST", body: { student_id: auth.id, concept_id: concept.id, self_confidence: confidence } });
+      const detail = await api(`/concepts/${concept.id}`);
+      session = {
+        id: s.id, concept: detail, confidence, stage: "writing", question: null, selected: null, feedback: null,
+        progress: { answered: 0, correct: 0, percent: 0 }, summary: null, error: null,
+        writingQuestions: buildWritingQuestions(detail), writingAnswers: {},
+      };
+      go("session");
+    } catch (err) {
+      alert("Couldn't start the session: " + err.message);
+      goBtn.disabled = false;
+      goBtn.textContent = "Start questions";
+    }
+  };
+  slot.innerHTML = "";
+  slot.appendChild(panel);
+  panel.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/* ================= SESSION (quiz flow) ================= */
+/* confidence -> question -> check -> performance -> "more questions?" -> yes: next question / no: final page */
+const STAGES = [
+  { key: "writing", label: "Explain in your words" },
+  { key: "question", label: "Answer the questions" },
+  { key: "feedback", label: "Check & performance" },
+  { key: "summary", label: "Final results" },
+];
+
+function railStageKey() {
+  if (session.stage === "summary") return "summary";
+  if (session.stage === "feedback") return "feedback";
+  if (session.stage === "writing") return "writing";
+  return "question";
+}
+
+function renderStageRail() {
+  const idx = STAGES.findIndex(s => s.key === railStageKey());
+  const items = STAGES.map((s, i) => {
+    const state = i < idx ? "done" : i === idx ? "active" : "upcoming";
+    return `<li data-state="${state}"><span class="stage-rail__marker">${state === "done" ? "✓" : i + 1}</span><span>${s.label}</span></li>`;
+  }).join("");
+  const p = session.progress || { answered: 0, correct: 0 };
+  const tally = p.answered ? `<p class="stage-rail__attempt">Answered: ${p.answered}<br/>Correct: ${p.correct}</p>` : "";
+  return h(`<nav class="stage-rail"><ol>${items}</ol>${tally}</nav>`);
+}
+
+async function loadNextQuestion() {
+  const s = session;
+  s.stage = "loading"; s.error = null; s.retry = "next"; render();
+  try {
+    const r = await api(`/sessions/${s.id}/next-question`);
+    if (session !== s) return;              // learner navigated away meanwhile
+    s.progress = r.progress;
+    if (r.done) { await finishQuiz(); return; }   // nothing left to ask
+    s.question = r.question; s.selected = null; s.feedback = null;
+    s.stage = "question";
+  } catch (err) {
+    if (session !== s) return;
+    s.stage = "error"; s.error = err.message;
+  }
+  render();
+}
+
+async function finishQuiz() {
+  const s = session;
+  s.stage = "loading"; s.retry = "finish"; render();
+  try {
+    const summary = await api(`/sessions/${s.id}/finish`, { method: "POST" });
+    if (session !== s) return;
+    s.summary = summary; s.stage = "summary";
+  } catch (err) {
+    if (session !== s) return;
+    s.stage = "error"; s.error = err.message;
+  }
+  render();
+}
+
+function optionButton(letter, text, cls = "", tag = "") {
+  return h(`<button type="button" class="option-btn ${cls}"><span class="option-btn__letter">${letter}</span><span>${esc(text)}</span>${tag ? `<span class="option-btn__tag">${tag}</span>` : ""}</button>`);
+}
+const LETTERS = ["A", "B", "C", "D", "E", "F"];
+
+function scoreRow(label, percent) {
+  return h(`<div class="score-bars__row"><span>${label}</span>
+    <div class="score-bars__track"><div class="score-bars__fill" data-low="${percent < 60}" style="width:${percent}%"></div></div>
+    <span class="score-bars__value">${percent}%</span></div>`);
+}
+
+function renderSession(root) {
+  const wrap = h(`<div class="page session-page"></div>`);
+  wrap.appendChild(renderStageRail());
+
+  const main = h(`<div></div>`);
+  main.appendChild(h(`<header class="session-page__header">
+    <p class="eyebrow-free-label">${esc(session.concept.subject)}</p>
+    <h1>${esc(session.concept.name)}</h1>
+    <p class="session-page__objective">${esc(session.concept.learning_objective)}</p>
+  </header>`));
+
+  if (session.stage === "loading") {
+    main.appendChild(h(`<p class="progress-page__empty">Loading…</p>`));
+  }
+
+  if (session.stage === "error") {
+    const box = h(`<div><div class="error-banner">Something went wrong: ${esc(session.error)}</div>
+      <div style="display:flex;gap:.75rem;"><button class="btn btn-marker" id="retry">Try again</button><button class="btn btn-ghost" id="home">Back to concepts</button></div></div>`);
+    box.querySelector("#retry").onclick = () => session.retry === "finish" ? finishQuiz() : loadNextQuestion();
+    box.querySelector("#home").onclick = () => go("home");
+    main.appendChild(box);
+  }
+
+  /* ---- 2) writing stage: a few open-ended questions before the MCQs ---- */
+  if (session.stage === "writing") {
+    const qs = session.writingQuestions || [];
+    const answers = session.writingAnswers || (session.writingAnswers = {});
+    const block = h(`<section class="diagnosis__block">
+      <h2>Explain it in your own words</h2>
+      <p class="teach-form__instruction">Answer these ${qs.length} question${qs.length===1?"":"s"} from memory, in a few sentences each. Then you'll move on to a short multiple-choice check.</p>
+    </section>`);
+    const fields = qs.map((q, i) => {
+      const field = h(`<div class="field written-q">
+        <label>${i + 1}. ${esc(q)}</label>
+        <textarea rows="3" placeholder="Type your explanation here…"></textarea>
+      </div>`);
+      const ta = field.querySelector("textarea");
+      ta.value = answers[i] || "";
+      ta.oninput = () => { answers[i] = ta.value; updateContinueState(); };
+      block.appendChild(field);
+      return ta;
+    });
+    const actions = h(`<div class="teach-form__actions"><button class="btn btn-marker" id="continue-writing" disabled>Continue to the quiz</button></div>`);
+    const continueBtn = actions.querySelector("#continue-writing");
+    function updateContinueState() {
+      continueBtn.disabled = !fields.every(ta => ta.value.trim().length > 0);
+    }
+    updateContinueState();
+    continueBtn.onclick = () => {
+      session.writingAnswers = answers;
+      loadNextQuestion();
+    };
+    block.appendChild(actions);
+    main.appendChild(block);
+  }
+
+  /* ---- 3) a question, waiting for the learner's answer ---- */
+  if (session.stage === "question" && session.question) {
+    const q = session.question, p = session.progress;
+    const block = h(`<section class="diagnosis__block">
+      <span class="level-badge" data-level="${esc(q.level)}">${esc(q.level)} level</span>
+      <p class="quiz-meta">Question ${q.number} of ${q.total} · Score so far: ${p.correct}/${p.answered}</p>
+      <p class="challenge-card__question">${esc(q.question)}</p>
+      <div class="option-list"></div>
+      <div class="teach-form__actions"><button class="btn btn-marker" id="check" disabled>Check answer</button></div>
+    </section>`);
+    const list = block.querySelector(".option-list");
+    const checkBtn = block.querySelector("#check");
+    const buttons = q.options.map((text, i) => {
+      const b = optionButton(LETTERS[i], text);
+      b.onclick = () => {
+        session.selected = i;
+        buttons.forEach((x, j) => x.classList.toggle("is-selected", j === i));
+        checkBtn.disabled = false;
+      };
+      list.appendChild(b);
+      return b;
+    });
+    checkBtn.onclick = async () => {
+      if (session.selected === null) return;
+      const s = session;
+      checkBtn.disabled = true; checkBtn.textContent = "Checking…";
+      try {
+        const result = await api(`/sessions/${s.id}/answer`, { method: "POST", body: { question_id: q.id, selected_index: s.selected } });
+        if (session !== s) return;
+        s.feedback = result; s.progress = result.progress; s.stage = "feedback";
+        render();
+      } catch (err) {
+        alert("Couldn't check your answer: " + err.message);
+        checkBtn.disabled = false; checkBtn.textContent = "Check answer";
+      }
+    };
+    main.appendChild(block);
+  }
+
+  /* ---- 4) result of this answer + performance, then 5/6) "more questions?" ---- */
+  if (session.stage === "feedback" && session.question && session.feedback) {
+    const q = session.question, f = session.feedback, p = f.progress;
+    const block = h(`<section class="diagnosis__block"><h2>Your result</h2></section>`);
+    block.appendChild(h(`<p class="challenge-verdict ${f.is_correct ? "challenge-verdict--correct" : "challenge-verdict--incorrect"}">${f.is_correct ? "CORRECT" : "INCORRECT"}</p>`));
+    block.appendChild(h(`<p class="challenge-card__question">${esc(q.question)}</p>`));
+
+    const list = h(`<div class="option-list"></div>`);
+    q.options.forEach((text, i) => {
+      let cls = "", tag = "";
+      if (i === f.correct_index) { cls = "is-correct"; tag = i === f.selected_index ? "✓ your answer" : "✓ correct answer"; }
+      else if (i === f.selected_index) { cls = "is-wrong"; tag = "✗ your answer"; }
+      const b = optionButton(LETTERS[i], text, cls, tag);
+      b.disabled = true;
+      list.appendChild(b);
+    });
+    block.appendChild(list);
+    block.appendChild(h(`<div class="combined-answer"><strong>Why:</strong> ${esc(f.explanation)}</div>`));
+
+    const perf = h(`<div style="margin-top:1.1rem;"></div>`);
+    perf.appendChild(h(`<p class="quiz-meta">Performance so far: ${p.correct} of ${p.answered} correct</p>`));
+    perf.appendChild(scoreRow("Score", p.percent));
+    block.appendChild(perf);
+
+    const more = h(`<div class="more-detail-prompt"></div>`);
+    const row = h(`<div style="display:flex;gap:.75rem;flex-wrap:wrap;"></div>`);
+    if (f.has_more) {
+      more.appendChild(h(`<p>Would you like more questions?</p>`));
+      const yes = h(`<button class="btn btn-marker">Yes, next question</button>`);
+      const no = h(`<button class="btn btn-ghost">No, show my final results</button>`);
+      yes.onclick = () => loadNextQuestion();
+      no.onclick = () => finishQuiz();
+      row.appendChild(yes); row.appendChild(no);
+    } else {
+      more.appendChild(h(`<p>You've answered every question available for this topic.</p>`));
+      const fin = h(`<button class="btn btn-marker">See my final results</button>`);
+      fin.onclick = () => finishQuiz();
+      row.appendChild(fin);
+    }
+    more.appendChild(row);
+    block.appendChild(more);
+    main.appendChild(block);
+  }
+
+  /* ---- 8) final page ---- */
+  if (session.stage === "summary" && session.summary) {
+    const s = session.summary;
+    const verified = s.verdict === "VERIFIED";
+    const block = h(`<section class="diagnosis__block"><h2>Final results</h2></section>`);
+    block.appendChild(h(`<p class="challenge-verdict ${verified ? "challenge-verdict--correct" : "challenge-verdict--partial"}">${verified ? "STRONG UNDERSTANDING" : "NEEDS REVISION"}</p>`));
+    block.appendChild(h(`<div class="final-score">${s.correct} / ${s.answered} <small>correct · ${s.percent}%</small></div>`));
+    block.appendChild(scoreRow("Overall score", s.percent));
+    block.appendChild(h(`<p class="diagnosis__status">${verified
+      ? "Nicely done — this topic is marked as verified in your profile."
+      : "Review the correct answers below, then try this topic again. Your result is saved on your dashboard."}</p>`));
+    main.appendChild(block);
+
+    /* ---- combined final answer: written explanations + MCQ score summed up ---- */
+    const wq = session.writingQuestions || [];
+    const wa = session.writingAnswers || {};
+    const writtenCount = wq.filter((_, i) => (wa[i] || "").trim().length > 0).length;
+
+    const finalAnswer = h(`<section class="diagnosis__block"><h2>Your final answer</h2></section>`);
+    finalAnswer.appendChild(h(`<p class="combined-answer"><strong>Summed up:</strong> You wrote ${writtenCount} of ${wq.length} explanations in your own words, then answered ${s.answered} multiple-choice question${s.answered === 1 ? "" : "s"} and got ${s.correct} correct (${s.percent}%). ${verified
+      ? `Together, that's a strong, verified understanding of ${esc(session.concept.name)}.`
+      : `Together, that shows real progress on ${esc(session.concept.name)}, with a few gaps still worth revising -- see the notes below.`}</p>`));
+    main.appendChild(finalAnswer);
+
+    /* ---- performance details ---- */
+    const perf = h(`<section class="diagnosis__block"><h2>Performance details</h2></section>`);
+    perf.appendChild(h(`<p class="quiz-meta">Self-rated confidence before starting: ${session.confidence ?? "--"}/5</p>`));
+    perf.appendChild(scoreRow("Written questions completed", wq.length ? Math.round(100 * writtenCount / wq.length) : 0));
+    perf.appendChild(scoreRow("MCQ score", s.percent));
+    perf.appendChild(scoreRow("Overall result", verified ? 100 : s.percent));
+    main.appendChild(perf);
+
+    /* ---- written answers review ---- */
+    const writtenRev = h(`<section class="diagnosis__block"><h2>Your written answers</h2></section>`);
+    if (wq.length) {
+      const wul = h(`<ul class="review-list"></ul>`);
+      wq.forEach((q, i) => {
+        const given = (wa[i] || "").trim();
+        wul.appendChild(h(`<li data-correct="${given.length > 0}">
+          <div class="review-list__q">${i + 1}. ${esc(q)}</div>
+          <div class="review-list__line written-answer">${esc(given || "(no answer given)")}</div>
+        </li>`));
+      });
+      writtenRev.appendChild(wul);
+    } else {
+      writtenRev.appendChild(h(`<p class="progress-page__empty">No written questions for this session.</p>`));
+    }
+    main.appendChild(writtenRev);
+
+    const rev = h(`<section class="diagnosis__block"><h2>Questions and correct answers</h2></section>`);
+    const ul = h(`<ul class="review-list"></ul>`);
+    s.review.forEach((r, i) => {
+      ul.appendChild(h(`<li data-correct="${r.is_correct}">
+        <div class="review-list__q">${i + 1}. ${esc(r.question)}</div>
+        <div class="review-list__line">Your answer: <strong>${esc(r.options[r.selected_index])}</strong> ${r.is_correct ? "✓" : "✗"}</div>
+        ${r.is_correct ? "" : `<div class="review-list__line">Correct answer: <strong>${esc(r.options[r.correct_index])}</strong></div>`}
+        <div class="review-list__why">${esc(r.explanation)}</div>
+      </li>`));
+    });
+    rev.appendChild(ul);
+    main.appendChild(rev);
+
+    const actions = h(`<div class="final-actions"></div>`);
+    const homeBtn = h(`<button class="btn btn-marker">Back to home</button>`);
+    homeBtn.onclick = () => go("home");
+    const dashBtn = h(`<button class="btn btn-ghost">See my dashboard</button>`);
+    dashBtn.onclick = () => go("dashboard");
+    actions.appendChild(homeBtn); actions.appendChild(dashBtn);
+    main.appendChild(actions);
+  }
+
+  wrap.appendChild(main);
+  root.appendChild(wrap);
+}
+
+/* ================= DASHBOARD ================= */
+async function renderDashboard(root) {
+  const wrap = h(`<div class="page dashboard-page">
+    <h1>Your dashboard</h1>
+    <div class="dash-tabs">
+      <button data-tab="profile">Profile</button>
+      <button data-tab="performance">Performance</button>
+    </div>
+    <div id="tab-content"></div>
+  </div>`);
+  root.appendChild(wrap);
+
+  wrap.querySelectorAll(".dash-tabs button").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.tab === dashTab);
+    btn.onclick = () => { dashTab = btn.dataset.tab; render(); };
+  });
+
+  const content = wrap.querySelector("#tab-content");
+  if (dashTab === "profile") await renderProfileTab(content);
+  else if (dashTab === "performance") await renderPerformanceTab(content);
+}
+
+async function renderProfileTab(content) {
+  try {
+    const student = await api(`/students/${auth.id}`);
+    const card = h(`<div class="profile-card">
+      <div class="profile-card__avatar">${esc(initials(student.name))}</div>
+      <div class="profile-card__row"><span class="profile-card__label">Name</span><span>${esc(student.name)}</span></div>
+      <div class="profile-card__row"><span class="profile-card__label">Username</span><span>${esc(student.username)}</span></div>
+      <div class="profile-card__row"><span class="profile-card__label">Student ID</span><span>${esc(student.student_code || "--")}</span></div>
+      <div class="profile-card__row"><span class="profile-card__label">Member since</span><span>${new Date(student.created_at).toLocaleDateString()}</span></div>
+    </div>`);
+    content.appendChild(card);
+    const logoutBtn = h(`<button class="btn btn-ghost" style="margin-top:1.2rem;">Log out</button>`);
+    logoutBtn.onclick = logout;
+    content.appendChild(logoutBtn);
+  } catch (err) {
+    content.appendChild(h(`<div class="error-banner">Couldn't load your profile -- ${esc(err.message)}</div>`));
+  }
+}
+
+const STATUS_LABEL = { VERIFIED: "Verified", NEEDS_REINFORCEMENT: "Needs revision", IN_PROGRESS: "In progress" };
+
+async function renderPerformanceTab(content) {
+  try {
+    const [profiles, weakAreas] = await Promise.all([api(`/students/${auth.id}/progress`), api(`/students/${auth.id}/weak-areas`)]);
+    if (!profiles.length) {
+      content.appendChild(h(`<p class="progress-page__empty">You haven't taught anything yet -- head to Concepts to get started.</p>`));
+      return;
+    }
+    const ledger = h(`<div class="ledger"></div>`);
+    profiles.forEach(p => {
+      ledger.appendChild(h(`<div class="ledger__row">
+        <div class="ledger__name"><span>${esc(p.concept_name)}</span>
+          <span class="ledger__status ledger__status--${p.verification_status.toLowerCase()}">${STATUS_LABEL[p.verification_status] || p.verification_status}</span></div>
+        <div class="ledger__bar"><div class="ledger__fill" style="width:${Math.round(p.understanding_score)}%"></div></div>
+        <span class="ledger__score">${Math.round(p.understanding_score)}%</span>
+        <span class="ledger__attempts">${p.attempts_count} attempt${p.attempts_count===1?"":"s"}</span>
+      </div>`));
+    });
+    content.appendChild(ledger);
+
+    const section = h(`<section class="weak-areas"><h2>Revision list</h2></section>`);
+    if (!weakAreas.length) {
+      section.appendChild(h(`<p class="progress-page__empty">No open gaps right now -- nice work.</p>`));
+    } else {
+      const ul = h(`<ul></ul>`);
+      weakAreas.forEach(w => ul.appendChild(h(`<li><span class="weak-areas__concept">${esc(w.concept_name)}</span><span class="weak-areas__desc">${esc(w.description)}</span></li>`)));
+      section.appendChild(ul);
+    }
+    content.appendChild(section);
+  } catch (err) {
+    content.appendChild(h(`<div class="error-banner">Couldn't load your performance -- ${esc(err.message)}</div>`));
+  }
+}
+
+/* ---------------- Boot ---------------- */
+checkApi();
+renderNav();
+render();
+if (view === "session" && session && (session.stage === "loading" || session.stage === "error")) {
+  if (session.retry === "finish") finishQuiz(); else loadNextQuestion();
+}
+</script>
+</body>
+</html> -->
+
+
+
+
+
+
+
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TeachBack AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink:#171326; --ink-soft:#4a4560; --rule:#948da8; --chalk:#f6f4fb; --chalk-dim:#e8e3f5;
+  --paper:#ffffff; --ink-on-paper:#201c33;
+  --marker:#5b3df0; --marker-deep:#4529c7; --marker-soft:#ece6fd;
+  --accent2:#ff7a45; --accent2-soft:#ffe6d6;
+  --verified:#12b76a; --verified-deep:#067a46; --verified-soft:#dcf5e8;
+  --alert:#e5484d; --alert-deep:#b6373b; --alert-soft:#fce1e2;
+  --font-display:"Space Grotesk","Segoe UI",sans-serif; --font-body:"IBM Plex Sans","Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono","SFMono-Regular",monospace;
+  --radius-sm:8px; --radius-md:16px; --radius-lg:26px; --rail-width:240px;
+  --shadow-sm: 0 1px 2px rgba(23,19,38,.06), 0 1px 1px rgba(23,19,38,.05);
+  --shadow-md: 0 12px 28px rgba(23,19,38,.10), 0 2px 8px rgba(23,19,38,.06);
+  --shadow-lg: 0 28px 60px rgba(23,19,38,.20), 0 8px 20px rgba(23,19,38,.10);
+  --ease: cubic-bezier(.2,.7,.3,1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin:0; background:var(--chalk); color:var(--ink-on-paper); font-family:var(--font-body);
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3 { font-family:var(--font-display); font-weight:600; margin:0; color:var(--ink); letter-spacing:-.015em; }
+p { margin:0; }
+button { font-family: var(--font-body); }
+:focus-visible { outline: 2px solid var(--marker-deep); outline-offset: 2px; }
+
+@keyframes fadeSlideIn { from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+@keyframes popIn { from{opacity:0; transform:translateY(10px) scale(.97);} to{opacity:1; transform:translateY(0) scale(1);} }
+@keyframes ripple { to { transform: scale(2.6); opacity:0; } }
+@keyframes pulseGlow { 0%,100%{ box-shadow:0 0 0 0 rgba(91,61,240,.30);} 50%{ box-shadow:0 0 0 9px rgba(91,61,240,0);} }
+@keyframes dotPulse { 0%,80%,100%{ opacity:.3; transform:scale(.75);} 40%{ opacity:1; transform:scale(1);} }
+@keyframes floatBlob { 0%,100%{ transform:translate(0,0) scale(1);} 50%{ transform:translate(-2%,3%) scale(1.04);} }
+
+.page { max-width: 940px; margin:0 auto; padding: 2.75rem 1.5rem 5.5rem; animation: fadeSlideIn .45s var(--ease); }
+.eyebrow-free-label { font-size:.82rem; color: var(--rule); }
+
+.loader-dots { display:inline-flex; gap:.3rem; align-items:center; padding:.5rem 0; }
+.loader-dots span { width:.45rem; height:.45rem; border-radius:50%; background: var(--marker); animation: dotPulse 1.1s ease-in-out infinite; }
+.loader-dots span:nth-child(2) { animation-delay:.15s; }
+.loader-dots span:nth-child(3) { animation-delay:.3s; }
+
+.btn {
+  position:relative; overflow:hidden; display:inline-flex; align-items:center; gap:.5em;
+  border:1.5px solid var(--ink); background:var(--ink); color:var(--chalk); --ripple-color: rgba(255,255,255,.45);
+  font-weight:600; font-size:.95rem; padding:.72em 1.5em; border-radius:999px; cursor:pointer;
+  transition: transform .12s var(--ease), box-shadow .18s var(--ease), background .18s var(--ease); box-shadow: var(--shadow-sm);
+}
+.btn:hover { background: var(--ink-soft); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(.97); }
+.btn:disabled { opacity:.4; cursor:not-allowed; box-shadow:none; transform:none; }
+.btn__ripple { position:absolute; border-radius:50%; background:var(--ripple-color); transform:scale(0); animation:ripple .55s ease-out forwards; pointer-events:none; }
+.btn-ghost { background:transparent; color:var(--ink); border-color:var(--chalk-dim); box-shadow:none; --ripple-color: rgba(23,19,38,.12); }
+.btn-ghost:hover { background: var(--paper); border-color: var(--rule); }
+.btn-marker { background: var(--marker); border-color: var(--marker-deep); color:#fff; }
+.btn-marker:hover { background: var(--marker-deep); }
+.btn-small { padding:.48em 1.1em; font-size:.82rem; }
+
+textarea, input {
+  font-family: var(--font-body); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-sm);
+  padding:.8em .85em; background: var(--paper); color: var(--ink-on-paper); width:100%; font-size:.96rem;
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+textarea:focus, input:focus { border-color: var(--marker); outline: none; box-shadow: 0 0 0 4px var(--marker-soft); }
+label { font-size:.82rem; color: var(--ink-soft); font-weight:600; display:block; margin-bottom:.35rem; }
+.field { margin-bottom: 1.1rem; }
+
+/* ---- Nav ---- */
+.navbar {
+  background: rgba(23,19,38,.92); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  color: var(--chalk); display:flex; align-items:center; justify-content:space-between;
+  padding: 1rem 1.75rem; position: sticky; top:0; z-index:20; box-shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 26px rgba(23,19,38,.18);
+}
+.navbar__wordmark { display:flex; align-items:center; gap:.55rem; font-family: var(--font-display); font-weight:700; font-size:1.28rem;
+  background:none; border:none; color:var(--chalk); cursor:pointer; padding:0; }
+.navbar__wordmark span { color: var(--marker); }
+.navbar__mark { width:22px; height:22px; flex-shrink:0; }
+.navbar__links { display:flex; gap:1.5rem; align-items:center; }
+.navbar__links button.link { position:relative; background:none; border:none; color: rgba(246,244,251,.65); padding:.35rem 0; cursor:pointer; font-size:.95rem; font-weight:500; transition: color .15s var(--ease); }
+.navbar__links button.link::after { content:""; position:absolute; left:0; right:0; bottom:-1px; height:2px; border-radius:2px; background:linear-gradient(90deg,var(--marker),var(--accent2)); transform: scaleX(0); transform-origin: left; transition: transform .25s var(--ease); }
+.navbar__links button.link:hover { color: var(--chalk); }
+.navbar__links button.link.is-active { color: var(--chalk); }
+.navbar__links button.link.is-active::after { transform: scaleX(1); }
+.navbar__avatar { width:1.9rem; height:1.9rem; border-radius:50%; background: linear-gradient(135deg,var(--marker),var(--accent2)); color:#fff;
+  display:flex; align-items:center; justify-content:center; font-size:.76rem; font-weight:700; flex-shrink:0; }
+.navbar__logout { border:1px solid rgba(246,244,251,.28); background:transparent; color: rgba(246,244,251,.75); border-radius:999px; padding:.42em .95em; font-size:.82rem; cursor:pointer; transition: all .15s var(--ease); }
+.navbar__logout:hover { color: var(--chalk); border-color: rgba(246,244,251,.6); background: rgba(246,244,251,.08); }
+
+.api-bar { background: var(--paper); border-bottom: 1.5px solid var(--chalk-dim); font-size:.82rem; padding: .55rem 1.5rem; display:flex; gap:.6rem; align-items:center; color: var(--ink-soft); }
+.api-bar input { flex: 0 1 320px; padding: .35em .55em; font-family: var(--font-mono); font-size: .8rem; }
+.api-bar__dot { width:.55rem; height:.55rem; border-radius:50%; background: var(--alert); flex-shrink:0; box-shadow: 0 0 0 3px var(--alert-soft); transition: all .2s var(--ease); }
+.api-bar__dot.ok { background: var(--verified); box-shadow: 0 0 0 3px var(--verified-soft); }
+
+/* ---- Auth ---- */
+.auth-page { max-width: 1040px; margin: 0 auto; padding: 4rem 1.5rem 5rem; display:grid; grid-template-columns: 1.05fr 1fr; gap: 3.5rem; align-items:center; }
+.auth-page__intro h1 { font-size: clamp(2.1rem, 3vw + 1rem, 2.7rem); line-height:1.14; margin-bottom: 1.1rem; }
+.auth-page__intro p { color: var(--ink-soft); max-width: 40ch; }
+.auth-page__lines { margin-top:2.5rem; display:flex; flex-direction:column; gap:1rem; max-width:36ch; }
+.auth-page__line { display:flex; gap:.75rem; align-items:flex-start; font-size:.92rem; color: var(--ink-soft); }
+.auth-page__line b { color: var(--ink); font-weight:600; }
+.auth-page__dot { width:1.5rem; height:1.5rem; border-radius:50%; background: var(--marker-soft); color:var(--marker-deep); font-family:var(--font-mono); font-size:.72rem; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.auth-card { background: var(--paper); border: 1.5px solid var(--chalk-dim); border-radius: var(--radius-lg); padding: 2.2rem 2.3rem; box-shadow: var(--shadow-lg); position:relative; overflow:hidden; }
+.auth-card::before { content:""; position:absolute; top:0; left:0; right:0; height:5px; background: linear-gradient(90deg,var(--marker),var(--accent2)); }
+.auth-card__tab { font-size:.78rem; color: var(--rule); margin-bottom:.35rem; }
+.auth-card h2 { font-size: 1.55rem; margin-bottom: 1.5rem; }
+.auth-card__switch { margin-top: 1.3rem; font-size: .88rem; color: var(--ink-soft); text-align:center; }
+.auth-card__switch button { background:none; border:none; color: var(--marker-deep); font-weight:600; cursor:pointer; padding:0; font-size:.88rem; text-decoration: underline; text-underline-offset:2px; }
+.auth-card__error { background: var(--alert-soft); border:1px solid var(--alert); color: var(--alert-deep); padding:.7rem .95rem; border-radius: var(--radius-sm); font-size:.85rem; margin-bottom:1.1rem; animation: popIn .25s var(--ease); }
+.auth-card__row { display:flex; gap:.8rem; }
+.auth-card__row .field { flex:1; }
+
+/* ---- Hero ---- */
+.hero { position:relative; overflow:hidden; display:grid; grid-template-columns: 1.15fr .85fr; gap:2.5rem; align-items:center; padding: 1.5rem 0 3.5rem; border-bottom: 1.5px solid var(--chalk-dim); }
+.hero::before {
+  content:""; position:absolute; top:-55%; right:-15%; width:65%; height:200%; z-index:0; pointer-events:none; filter:blur(50px); opacity:.85;
+  background: radial-gradient(circle at 30% 30%, var(--marker-soft), transparent 60%), radial-gradient(circle at 70% 65%, var(--accent2-soft), transparent 55%);
+  animation: floatBlob 12s ease-in-out infinite;
+}
+.hero > * { position:relative; z-index:1; }
+.hero__welcome { font-family: var(--font-mono); font-size:.82rem; color: var(--marker-deep); margin: 0 0 .9rem; }
+.hero__text h1 { font-size:clamp(2rem, 2.6vw + 1rem, 2.75rem); line-height:1.12; margin-bottom:1.1rem; max-width:17ch; }
+.hero__text p { max-width:44ch; color: var(--ink-soft); }
+.hero-flow { display:flex; flex-direction:column; gap:0; background: var(--paper); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-lg); padding:1.5rem 1.6rem; box-shadow: var(--shadow-md); }
+.hero-flow__title { font-size:.78rem; color: var(--rule); margin-bottom:.9rem; font-weight:600; }
+.hero-flow__step { display:flex; align-items:center; gap:.85rem; padding:.6rem 0; position:relative; }
+.hero-flow__num { width:1.8rem; height:1.8rem; border-radius:50%; border:1.5px solid var(--chalk-dim); display:flex; align-items:center; justify-content:center; font-size:.78rem; font-family:var(--font-mono); color: var(--ink-soft); flex-shrink:0; background: var(--chalk); z-index:1; }
+.hero-flow__step:nth-child(1) .hero-flow__num { border-color: var(--marker); color: var(--marker-deep); background: var(--marker-soft); }
+.hero-flow__step span:last-child { font-size:.92rem; color: var(--ink); font-weight:500; }
+.hero-flow__line { position:absolute; left:.9rem; top:100%; width:1.5px; height:.6rem; background: var(--chalk-dim); }
+@media (max-width: 760px) { .hero { grid-template-columns: 1fr; } }
+
+.library { padding-top:3rem; }
+.library__header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:1.6rem; flex-wrap:wrap; gap:.5rem; }
+.library__grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(250px,1fr)); gap:1.2rem; }
+.concept-card {
+  opacity:0; animation: popIn .5s var(--ease) forwards;
+  background: var(--paper); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-md);
+  padding:1.25rem 1.35rem 1.4rem; display:flex; flex-direction:column; gap:.6rem; box-shadow: var(--shadow-sm);
+  transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease);
+}
+.concept-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--marker); }
+.concept-card__accent { height:5px; width:2.4rem; border-radius:4px; background: var(--rule); margin-bottom:.2rem; }
+.concept-card[data-difficulty="beginner"] .concept-card__accent { background: var(--verified); }
+.concept-card[data-difficulty="intermediate"] .concept-card__accent { background: var(--marker); }
+.concept-card__top { display:flex; align-items:center; gap:.65rem; }
+.concept-card__badge { width:2.05rem; height:2.05rem; border-radius:50%; background: var(--chalk-dim); color: var(--ink-soft); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:.8rem; font-weight:700; flex-shrink:0; }
+.concept-card__tab { font-size:.8rem; color: var(--rule); }
+.concept-card h3 { font-size:1.16rem; }
+.concept-card p { color: var(--ink-soft); font-size:.92rem; flex-grow:1; }
+.concept-card__foot { display:flex; justify-content:space-between; align-items:center; margin-top:.4rem; }
+.concept-card__difficulty { font-size:.82rem; color: var(--rule); display:flex; align-items:center; gap:.4rem; }
+.concept-card__difficulty::before { content:""; width:.45rem; height:.45rem; border-radius:50%; background: currentColor; opacity:.6; }
+
+.start-panel { position: sticky; bottom: 1.25rem; margin-top: 2.5rem; }
+.start-panel__inner { background: var(--ink); color: var(--chalk); border-radius: var(--radius-lg); padding: 1.6rem 1.8rem; box-shadow: var(--shadow-lg); animation: popIn .35s var(--ease); }
+.start-panel__inner h3 { color: var(--chalk); font-size:1.28rem; margin-bottom:.45rem; }
+.start-panel__inner p { color: rgba(246,244,251,.75); font-size:.92rem; margin:.3rem 0; }
+.start-panel__question { margin-top:1rem; font-weight:600; color: var(--chalk); }
+.start-panel__hint { font-size: .78rem; color: rgba(246,244,251,.6); margin-top: -.4rem; }
+.start-panel__scale { display:flex; gap:.6rem; margin:.8rem 0 .3rem; }
+.scale-dot { width:2.5rem; height:2.5rem; border-radius:50%; border:1.5px solid rgba(246,244,251,.3); background:transparent; color:var(--chalk); cursor:pointer; font-family:var(--font-mono); font-weight:600; font-size:.95rem; transition: all .15s var(--ease); }
+.scale-dot:hover { border-color: var(--marker); transform: translateY(-2px); }
+.scale-dot.is-selected { background: linear-gradient(135deg,var(--marker),var(--accent2)); border-color: transparent; color: #fff; transform: scale(1.1); animation: pulseGlow 1.6s ease-in-out infinite; }
+.start-panel__actions { display:flex; justify-content:flex-end; gap:.75rem; margin-top: 1.2rem;}
+
+/* ---- Session ---- */
+.session-page { display:grid; grid-template-columns: var(--rail-width) 1fr; gap:2.5rem; align-items:start; }
+.stage-rail { background: linear-gradient(165deg,var(--ink),#241d3d); color: var(--chalk); border-radius: var(--radius-lg); padding:1.6rem 1.35rem; position: sticky; top: 5.5rem; box-shadow: var(--shadow-md); }
+.stage-rail ol { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:0; position:relative; }
+.stage-rail ol::before { content:""; position:absolute; left:.78rem; top:.78rem; bottom:.78rem; width:1.5px; background: rgba(246,244,251,.16); }
+.stage-rail li { display:flex; align-items:flex-start; gap:.75rem; font-size:.9rem; color: rgba(246,244,251,.55); padding:.6rem 0; position:relative; transition: color .2s var(--ease); }
+.stage-rail__marker { flex-shrink:0; width:1.55rem; height:1.55rem; border-radius:50%; border:1.5px solid rgba(246,244,251,.3); display:flex; align-items:center; justify-content:center; font-size:.75rem; background: var(--ink); z-index:1; transition: all .25s var(--ease); }
+.stage-rail li[data-state="active"] { color: var(--chalk); }
+.stage-rail li[data-state="active"] .stage-rail__marker { background: var(--marker); border-color: var(--marker); color: #fff; box-shadow: 0 0 0 5px rgba(91,61,240,.25); }
+.stage-rail li[data-state="done"] .stage-rail__marker { background: var(--verified); border-color: var(--verified); color: var(--ink); }
+.stage-rail__attempt { margin: 1.1rem 0 0; font-size:.8rem; color: rgba(246,244,251,.6); border-top:1px solid rgba(246,244,251,.16); padding-top:.9rem; line-height:1.7; }
+.session-page__header { margin-bottom: 1.9rem; }
+.session-page__header h1 { font-size:2.05rem; margin:.25rem 0 .55rem; }
+.session-page__objective { color: var(--ink-soft); max-width:60ch; }
+.teach-form__instruction { color: var(--ink-soft); margin-bottom:1.1rem; }
+.teach-form textarea { font-family: var(--font-mono); font-size:.94rem; resize:vertical; }
+.teach-form__actions { display:flex; justify-content:flex-end; margin-top:1.1rem; gap:.75rem; }
+.diagnosis__block { background: var(--paper); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-md); padding:1.4rem 1.55rem; margin-bottom:1.3rem; box-shadow: var(--shadow-sm); animation: popIn .4s var(--ease); }
+.diagnosis__block h2 { font-size:1.1rem; margin-bottom:1rem; }
+.diagnosis__status { margin-top:1rem; color: var(--ink-soft); }
+.score-bars__row { display:grid; grid-template-columns: 11rem 1fr 3.2rem; align-items:center; gap:.75rem; margin-bottom:.6rem; font-size:.9rem; }
+.score-bars__track { height:9px; background: var(--chalk-dim); border-radius:6px; overflow:hidden; }
+.score-bars__fill { height:100%; background: linear-gradient(90deg,var(--verified),#3fd08a); border-radius:6px; transition: width .8s var(--ease); }
+.score-bars__fill[data-low="true"] { background: linear-gradient(90deg,var(--alert),#f0797d); }
+.score-bars__value { text-align:right; font-family: var(--font-mono); font-size:.82rem; }
+.challenge-card__question { position:relative; font-family: var(--font-display); font-weight:500; font-size:1.22rem; line-height:1.4; margin:.3rem 0 .9rem; padding-left:1.4rem; }
+.challenge-card__question::before { content:"\201C"; position:absolute; left:-.15rem; top:-.3rem; font-size:2rem; color: var(--marker); font-family:var(--font-display); }
+.level-badge { display:inline-block; font-family: var(--font-mono); font-size:.72rem; letter-spacing:.02em; border:1px solid var(--chalk-dim); background: var(--chalk); color: var(--ink-soft); border-radius:999px; padding:.2em .7em; margin-bottom:1rem; }
+.level-badge[data-level="advanced"] { border-color: var(--marker); color: var(--marker-deep); background: var(--marker-soft); }
+.challenge-verdict { display:inline-flex; align-items:center; gap:.4rem; font-family: var(--font-mono); font-size:.85rem; padding:.35em .8em; border-radius:999px; margin-bottom:1rem; }
+.challenge-verdict--correct { background: var(--verified-soft); color: var(--verified-deep); }
+.challenge-verdict--partial { background: var(--marker-soft); color: var(--marker-deep); }
+.challenge-verdict--incorrect { background: var(--alert-soft); color: var(--alert-deep); }
+.combined-answer { border-left: 3px solid var(--marker); background: var(--marker-soft); padding: 1.05rem 1.2rem; border-radius: var(--radius-sm); font-size: .95rem; margin: 1rem 0; line-height:1.6; }
+.combined-answer strong { color: var(--ink); }
+.more-detail-prompt { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px dashed var(--chalk-dim); }
+.more-detail-prompt p { font-weight: 600; margin-bottom: .8rem; }
+
+/* ---- Written questions ---- */
+.written-q { margin-bottom: 1.4rem; }
+.written-q label { font-size:.95rem; color: var(--ink); font-weight:600; margin-bottom:.4rem; }
+.written-q textarea { min-height: 5.2rem; }
+.review-list__line.written-answer { white-space: pre-wrap; }
+
+/* ---- Quiz ---- */
+.quiz-meta { font-family: var(--font-mono); font-size:.8rem; color: var(--rule); margin:.2rem 0 1rem; }
+.option-list { display:flex; flex-direction:column; gap:.65rem; margin: 1.1rem 0 .5rem; }
+.option-btn { display:flex; gap:.85rem; align-items:center; text-align:left; width:100%; background: var(--paper); color: var(--ink-on-paper); border:1.5px solid var(--chalk-dim); border-radius: var(--radius-md); padding:.78em 1.05em; font-size:.95rem; cursor:pointer; transition: all .15s var(--ease); }
+.option-btn:hover:not(:disabled) { border-color: var(--marker); background: var(--chalk); transform: translateX(2px); }
+.option-btn:disabled { cursor: default; }
+.option-btn__letter { font-family: var(--font-mono); font-size:.78rem; color: var(--ink-soft); flex-shrink:0; width:1.75rem; height:1.75rem; border-radius:50%; border:1.5px solid var(--chalk-dim); display:flex; align-items:center; justify-content:center; transition: all .15s var(--ease); }
+.option-btn.is-selected { border-color: var(--marker); background: var(--marker-soft); }
+.option-btn.is-selected .option-btn__letter { border-color: var(--marker); background: var(--marker); color: #fff; }
+.option-btn.is-correct { border-color: var(--verified); background: var(--verified-soft); animation: popIn .3s var(--ease); }
+.option-btn.is-correct .option-btn__letter { border-color: var(--verified); background: var(--verified); color: #fff; }
+.option-btn.is-wrong { border-color: var(--alert); background: var(--alert-soft); animation: popIn .3s var(--ease); }
+.option-btn.is-wrong .option-btn__letter { border-color: var(--alert); background: var(--alert); color: #fff; }
+.option-btn__tag { margin-left:auto; font-size:.75rem; font-family: var(--font-mono); white-space:nowrap; }
+
+.score-ring { position:relative; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+.score-ring__track { fill:none; stroke: var(--chalk-dim); stroke-width:10; }
+.score-ring__fill { fill:none; stroke: var(--marker); stroke-width:10; stroke-linecap:round; transition: stroke-dashoffset 1s var(--ease); }
+.score-ring__label { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.score-ring__label strong { font-family:var(--font-display); font-size:1.55rem; color: var(--ink); line-height:1; }
+.score-ring__label span { font-size:.7rem; color: var(--rule); margin-top:.2rem; }
+.final-score-row { display:flex; align-items:center; gap:1.6rem; flex-wrap:wrap; margin:.3rem 0 .9rem; }
+.final-score { font-family: var(--font-display); font-size: 2.6rem; color: var(--ink); }
+.final-score small { font-size: 1rem; color: var(--rule); font-family: var(--font-body); font-weight:400; }
+
+.review-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:1rem; }
+.review-list li { border-left:4px solid var(--alert); background: var(--paper); border-radius:var(--radius-sm); padding:.9rem 1.1rem; font-size:.92rem; box-shadow: var(--shadow-sm); }
+.review-list li[data-correct="true"] { border-left-color: var(--verified); }
+.review-list__q { font-weight:600; margin-bottom:.4rem; color: var(--ink); }
+.review-list__line { color: var(--ink-soft); }
+.review-list__line strong { color: var(--ink); }
+.review-list__why { margin-top:.45rem; color: var(--ink-soft); font-size:.88rem; }
+.final-actions { display:flex; gap:.75rem; flex-wrap:wrap; margin-top:1.6rem; }
+
+/* ---- Dashboard ---- */
+.dashboard-page h1 { font-size:2.05rem; margin-bottom: 1.6rem; }
+.dash-tabs { display:flex; gap: .3rem; border-bottom: 1.5px solid var(--chalk-dim); margin-bottom: 2.1rem; }
+.dash-tabs button { background:none; border:none; padding: .65em 1.1em; font-size: .92rem; color: var(--ink-soft); cursor:pointer; border-bottom: 2px solid transparent; margin-bottom:-1.5px; transition: all .15s var(--ease); font-weight:500; }
+.dash-tabs button:hover { color: var(--ink); }
+.dash-tabs button.is-active { color: var(--ink); border-bottom-color: var(--marker); }
+.profile-card { background: var(--paper); border: 1.5px solid var(--chalk-dim); border-radius: var(--radius-md); padding: 1.9rem 2rem; max-width: 480px; box-shadow: var(--shadow-sm); }
+.profile-card__avatar { width:3.4rem; height:3.4rem; border-radius:50%; background: linear-gradient(135deg,var(--marker),var(--accent2)); color:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:1.3rem; margin-bottom:1.1rem; }
+.profile-card__row { display:flex; justify-content:space-between; padding: .6rem 0; border-bottom: 1px solid var(--chalk-dim); font-size: .92rem; }
+.profile-card__row:last-of-type { border-bottom: none; }
+.profile-card__label { color: var(--rule); }
+.progress-page__empty { color: var(--ink-soft); }
+.ledger { border-top: 1.5px solid var(--chalk-dim); }
+.ledger__row { display:grid; grid-template-columns: 14rem 1fr 3.4rem 6.2rem; align-items:center; gap:1rem; padding:.95rem 0; border-bottom:1.5px solid var(--chalk-dim); transition: background .15s var(--ease); }
+.ledger__row:hover { background: var(--marker-soft); }
+.ledger__name { display:flex; flex-direction:column; gap:.3rem; font-weight:600; }
+.ledger__status { display:inline-flex; align-self:flex-start; font-size:.72rem; font-weight:600; padding:.18em .6em; border-radius:999px; background: var(--chalk-dim); color: var(--rule); }
+.ledger__status--verified { color: var(--verified-deep); background: var(--verified-soft); }
+.ledger__status--needs_reinforcement { color: var(--marker-deep); background: var(--marker-soft); }
+.ledger__bar { height:9px; background: var(--chalk-dim); border-radius:6px; overflow:hidden; }
+.ledger__fill { height:100%; background: linear-gradient(90deg,var(--verified),#3fd08a); border-radius:6px; transition: width 1s var(--ease); }
+.ledger__score { font-family: var(--font-mono); font-size:.85rem; text-align:right; }
+.ledger__attempts { font-size:.8rem; color: var(--rule); text-align:right; }
+.weak-areas { margin-top:3.2rem; }
+.weak-areas h2 { font-size:1.25rem; margin-bottom:1.1rem; }
+.weak-areas ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.9rem; }
+.weak-areas li { background: var(--paper); border-left:3px solid var(--marker); border-radius:var(--radius-sm); padding:.8rem 1.1rem; display:flex; flex-direction:column; gap:.25rem; box-shadow: var(--shadow-sm); }
+.weak-areas__concept { font-size:.78rem; color: var(--rule); }
+.weak-areas__desc { font-size:.92rem; }
+.error-banner { background: var(--alert-soft); border:1px solid var(--alert); color: var(--alert-deep); padding:.85rem 1.05rem; border-radius: var(--radius-sm); margin-bottom:1.5rem; font-size:.9rem; }
+@media (max-width: 760px) { .session-page { grid-template-columns: 1fr; } .stage-rail { position: static; } }
+@media (max-width: 720px) { .auth-page { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .ledger__row { grid-template-columns: 1fr; gap:.5rem; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; } }
+</style>
+</head>
+<body>
+<header class="navbar">
+  <button class="navbar__wordmark" onclick="go('home')">
+    <svg class="navbar__mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M4 8.5 12 4l8 4.5-8 4.5-8-4.5Z" stroke="#f6f4fb" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M7 10.3V15c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.7" stroke="#ff7a45" stroke-width="1.4" stroke-linejoin="round"/>
+    </svg>
+    TeachBack <span>AI</span>
+  </button>
+  <nav class="navbar__links" id="nav-links"></nav>
+</header>
+<div class="api-bar">
+  <span class="api-bar__dot" id="api-dot"></span>
+  <span>Backend:</span>
+  <input id="api-url" value="http://localhost:8000" />
+  <button class="btn btn-ghost btn-small" id="api-check">Check connection</button>
+</div>
+<main id="root"></main>
+
+<script>
+/* ---------------- API client ---------------- */
+function apiBase() { return document.getElementById("api-url").value.replace(/\/$/, ""); }
+
+async function api(path, { method = "GET", body } = {}) {
+  const res = await fetch(apiBase() + path, {
+    method,
+    headers: body ? { "Content-Type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    let detail = res.statusText;
+    try { detail = (await res.json()).detail || detail; } catch {}
+    throw new Error(detail);
+  }
+  return res.status === 204 ? null : res.json();
+}
+
+async function checkApi() {
+  const dot = document.getElementById("api-dot");
+  try { await api("/health"); dot.classList.add("ok"); }
+  catch { dot.classList.remove("ok"); }
+}
+document.getElementById("api-check").onclick = checkApi;
+
+/* ---------------- Global micro-interaction: button ripple ---------------- */
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".btn");
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+  const ripple = document.createElement("span");
+  ripple.className = "btn__ripple";
+  const size = Math.max(rect.width, rect.height);
+  ripple.style.width = ripple.style.height = size + "px";
+  ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
+  ripple.style.top = (e.clientY - rect.top - size / 2) + "px";
+  btn.appendChild(ripple);
+  ripple.addEventListener("animationend", () => ripple.remove());
+});
+
+/* ---------------- Auth state ---------------- */
+let auth = null; // { id, username, name }
+try {
+  const stored = localStorage.getItem("teachback_auth");
+  if (stored) auth = JSON.parse(stored);
+} catch {}
+
+function persistAuth() {
+  try { localStorage.setItem("teachback_auth", JSON.stringify(auth)); } catch {}
+}
+function logout() {
+  auth = null;
+  session = null;
+  try { localStorage.removeItem("teachback_auth"); } catch {}
+  go("auth");
+}
+
+function initials(name) {
+  return (name || "?").trim().split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+}
+
+/* ---------------- App state ---------------- */
+let view = auth ? "home" : "auth";
+let authMode = "login"; // login | register
+let concepts = [];
+let session = null;
+let dashTab = "profile";
+
+// A page reload (or an editor "live reload") used to wipe the in-memory session and drop
+// the learner on the home page. The active quiz is now saved and restored.
+try {
+  const saved = JSON.parse(localStorage.getItem("teachback_state") || "null");
+  if (auth && saved && saved.view === "session" && saved.session) { view = "session"; session = saved.session; }
+} catch {}
+function saveState() {
+  try {
+    if (view === "session" && session) localStorage.setItem("teachback_state", JSON.stringify({ view, session }));
+    else localStorage.removeItem("teachback_state");
+  } catch {}
+}
+
+function h(html) { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; }
+function esc(s) { return (s ?? "").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+/* Animate a fill bar in from 0 on its next paint, without touching its final markup/classes. */
+function animateFill(el, percent) {
+  if (!el) return;
+  const target = el.style.width;
+  el.style.width = "0%";
+  requestAnimationFrame(() => requestAnimationFrame(() => { el.style.width = target || (percent + "%"); }));
+}
+
+/* A small animated ring used alongside the final score -- purely decorative. */
+function buildRing(percent, size = 132) {
+  const r = (size - 14) / 2, c = 2 * Math.PI * r, mid = size / 2;
+  const wrap = h(`<div class="score-ring" style="width:${size}px;height:${size}px"></div>`);
+  wrap.innerHTML = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+      <circle cx="${mid}" cy="${mid}" r="${r}" class="score-ring__track"/>
+      <circle cx="${mid}" cy="${mid}" r="${r}" class="score-ring__fill" style="stroke-dasharray:${c};stroke-dashoffset:${c}" transform="rotate(-90 ${mid} ${mid})"/>
+    </svg>
+    <div class="score-ring__label"><strong>${percent}%</strong><span>score</span></div>`;
+  const fill = wrap.querySelector(".score-ring__fill");
+  requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.strokeDashoffset = c - (c * percent / 100); }));
+  return wrap;
+}
+
+function go(v) {
+  if (v !== "auth" && !auth) v = "auth";
+  if (v !== "session") session = null;   // leaving the quiz always starts fresh next time
+  view = v;
+  renderNav();
+  render();
+  window.scrollTo(0, 0);
+}
+
+function renderNav() {
+  const nav = document.getElementById("nav-links");
+  nav.innerHTML = "";
+  if (!auth) return;
+  const conceptsBtn = h(`<button class="link ${view==='home'?'is-active':''}">Concepts</button>`);
+  conceptsBtn.onclick = () => go("home");
+  const dashBtn = h(`<button class="link ${view==='dashboard'?'is-active':''}">Dashboard</button>`);
+  dashBtn.onclick = () => go("dashboard");
+  const avatar = h(`<span class="navbar__avatar" title="${esc(auth.name || auth.username)}">${esc(initials(auth.name || auth.username))}</span>`);
+  const logoutBtn = h(`<button class="navbar__logout">Log out</button>`);
+  logoutBtn.onclick = logout;
+  nav.appendChild(conceptsBtn);
+  nav.appendChild(dashBtn);
+  nav.appendChild(avatar);
+  nav.appendChild(logoutBtn);
+}
+
+/* ---------------- Rendering root ---------------- */
+function render() {
+  const root = document.getElementById("root");
+  root.innerHTML = "";
+  if (view === "auth") renderAuth(root);
+  else if (view === "home") renderHome(root);
+  else if (view === "session") renderSession(root);
+  else if (view === "dashboard") renderDashboard(root);
+  saveState();
+}
+
+/* ================= AUTH ================= */
+function renderAuth(root) {
+  const wrap = h(`<div class="auth-page">
+    <div class="auth-page__intro">
+      <h1>Learn by teaching.<br/>Understand by explaining.</h1>
+      <p>Sign in to keep your knowledge profile, teaching history, and progress across visits -- TeachBack AI remembers exactly where each concept stood.</p>
+      <div class="auth-page__lines">
+        <div class="auth-page__line"><span class="auth-page__dot">1</span><span>Explain a concept <b>in your own words</b> before any quiz begins.</span></div>
+        <div class="auth-page__line"><span class="auth-page__dot">2</span><span>TeachBack AI plays the student and <b>finds the exact gap</b> in your reasoning.</span></div>
+        <div class="auth-page__line"><span class="auth-page__dot">3</span><span>Every attempt is saved to a <b>ledger</b> you can revisit on your dashboard.</span></div>
+      </div>
+    </div>
+    <div class="auth-card" id="auth-card"></div>
+  </div>`);
+  root.appendChild(wrap);
+  renderAuthCard(wrap.querySelector("#auth-card"));
+}
+
+function renderAuthCard(mount) {
+  mount.innerHTML = "";
+  if (authMode === "login") {
+    const card = h(`<div>
+      <div class="auth-card__tab">Class register</div>
+      <h2>Log in</h2>
+      <div id="err"></div>
+      <form id="form">
+        <div class="field"><label>Username</label><input name="username" required autocomplete="username" /></div>
+        <div class="field"><label>Password</label><input name="password" type="password" required autocomplete="current-password" /></div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="btn btn-marker">Log in</button>
+        </div>
+      </form>
+      <p class="auth-card__switch">New here? <button id="switch">Create an account</button></p>
+    </div>`);
+    card.querySelector("#switch").onclick = () => { authMode = "register"; renderAuthCard(mount); };
+    card.querySelector("#form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const btn = e.target.querySelector("button[type=submit]");
+      btn.disabled = true; btn.textContent = "Logging in…";
+      try {
+        const student = await api("/auth/login", { method: "POST", body: { username: fd.get("username"), password: fd.get("password") } });
+        auth = { id: student.id, username: student.username, name: student.name };
+        persistAuth();
+        go("home");
+      } catch (err) {
+        card.querySelector("#err").innerHTML = "";
+        card.querySelector("#err").appendChild(h(`<div class="auth-card__error">${esc(err.message)}</div>`));
+        btn.disabled = false; btn.textContent = "Log in";
+      }
+    };
+    mount.appendChild(card);
+  } else {
+    const card = h(`<div>
+      <div class="auth-card__tab">Class register</div>
+      <h2>Create an account</h2>
+      <div id="err"></div>
+      <form id="form">
+        <div class="field"><label>Full name</label><input name="name" required /></div>
+        <div class="auth-card__row">
+          <div class="field"><label>Username</label><input name="username" required autocomplete="username" minlength="3" /></div>
+          <div class="field"><label>Student ID (optional)</label><input name="student_code" placeholder="e.g. roll number" /></div>
+        </div>
+        <div class="field"><label>Password</label><input name="password" type="password" required autocomplete="new-password" minlength="4" /></div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="btn btn-marker">Create account</button>
+        </div>
+      </form>
+      <p class="auth-card__switch">Already registered? <button id="switch">Log in</button></p>
+    </div>`);
+    card.querySelector("#switch").onclick = () => { authMode = "login"; renderAuthCard(mount); };
+    card.querySelector("#form").onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target);
+      const btn = e.target.querySelector("button[type=submit]");
+      btn.disabled = true; btn.textContent = "Creating…";
+      try {
+        const student = await api("/auth/register", { method: "POST", body: {
+          username: fd.get("username"), password: fd.get("password"),
+          name: fd.get("name"), student_code: fd.get("student_code") || null,
+        }});
+        auth = { id: student.id, username: student.username, name: student.name };
+        persistAuth();
+        go("home");
+      } catch (err) {
+        card.querySelector("#err").innerHTML = "";
+        card.querySelector("#err").appendChild(h(`<div class="auth-card__error">${esc(err.message)}</div>`));
+        btn.disabled = false; btn.textContent = "Create account";
+      }
+    };
+    mount.appendChild(card);
+  }
+}
+
+/* ================= HOME ================= */
+async function renderHome(root) {
+  const flowSteps = STAGES.map((s, i) =>
+    `<div class="hero-flow__step">${i < STAGES.length - 1 ? '<span class="hero-flow__line"></span>' : ''}<span class="hero-flow__num">${i + 1}</span><span>${esc(s.label)}</span></div>`
+  ).join("");
+
+  const wrap = h(`<div class="page">
+    <section class="hero">
+      <div class="hero__text">
+        <p class="hero__welcome">Welcome to TeachBack AI</p>
+        <h1>Learn by teaching.<br/>Understand by explaining.</h1>
+        <p>Pick a concept, explain it in your own words, and TeachBack AI plays the student who knows nothing. It won't just mark you right or wrong -- it will find the exact spot your explanation breaks down.</p>
+      </div>
+      <div class="hero-flow">
+        <p class="hero-flow__title">How a session runs</p>
+        ${flowSteps}
+      </div>
+    </section>
+    <section class="library">
+      <div class="library__header"><h2>Choose a concept to teach</h2><p class="eyebrow-free-label" id="count"></p></div>
+      <div id="status"></div>
+      <div class="library__grid" id="grid"></div>
+    </section>
+    <div id="start-panel-slot"></div>
+  </div>`);
+  root.appendChild(wrap);
+
+  const statusEl = wrap.querySelector("#status");
+  statusEl.appendChild(h(`<div class="loader-dots" id="home-loader"><span></span><span></span><span></span></div>`));
+  try {
+    concepts = await api("/concepts");
+    wrap.querySelector("#count").textContent = `${concepts.length} concepts in the MVP set`;
+    statusEl.innerHTML = "";
+  } catch (err) {
+    statusEl.innerHTML = "";
+    statusEl.appendChild(h(`<div class="error-banner">Couldn't load concepts from ${esc(apiBase())} -- ${esc(err.message)}. Make sure backend.py is running and the URL above is correct.</div>`));
+    return;
+  }
+
+  const grid = wrap.querySelector("#grid");
+  concepts.forEach((c, i) => {
+    const card = h(`<article class="concept-card" data-difficulty="${esc(c.difficulty)}" style="animation-delay:${Math.min(i * 45, 360)}ms">
+      <div class="concept-card__accent"></div>
+      <div class="concept-card__top">
+        <span class="concept-card__badge">${esc((c.subject || "?").trim().charAt(0).toUpperCase())}</span>
+        <span class="concept-card__tab">${esc(c.subject)}</span>
+      </div>
+      <h3>${esc(c.name)}</h3>
+      <p>${esc(c.description)}</p>
+      <div class="concept-card__foot">
+        <span class="concept-card__difficulty">${esc(c.difficulty)}</span>
+        <button class="btn btn-marker btn-small">Teach this</button>
+      </div>
+    </article>`);
+    card.querySelector("button").onclick = () => showStartPanel(wrap, c);
+    grid.appendChild(card);
+  });
+}
+
+function buildWritingQuestions(detail) {
+  const fromPoints = (detail.key_points || []).map(k => k.challenge).filter(Boolean);
+  const qs = fromPoints.slice(0, 4);
+  if (qs.length < 3 && detail.learning_objective) qs.push(`In your own words, explain: ${detail.learning_objective}`);
+  return qs.slice(0, 4);
+}
+
+function showStartPanel(wrap, concept) {
+  const slot = wrap.querySelector("#start-panel-slot");
+  let confidence = null;
+  const panel = h(`<section class="start-panel">
+    <div class="start-panel__inner">
+      <h3>Before you start: ${esc(concept.name)}</h3>
+      <p>${esc(concept.description)}</p>
+      <p class="start-panel__question">How confident are you that you already understand it?</p>
+      <p class="start-panel__hint">1-3 gives you basic questions first; 4-5 starts you on harder, advanced ones.</p>
+      <div class="start-panel__scale" id="scale"></div>
+      <div class="start-panel__actions">
+        <button class="btn btn-ghost" id="cancel">Cancel</button>
+        <button class="btn btn-marker" id="go-btn" disabled>Start questions</button>
+      </div>
+    </div>
+  </section>`);
+  const scale = panel.querySelector("#scale");
+  const goBtn = panel.querySelector("#go-btn");
+  [1,2,3,4,5].forEach(n => {
+    const dot = h(`<button class="scale-dot">${n}</button>`);
+    dot.onclick = () => {
+      confidence = n;
+      scale.querySelectorAll(".scale-dot").forEach(d => d.classList.remove("is-selected"));
+      dot.classList.add("is-selected");
+      goBtn.disabled = false;
+    };
+    scale.appendChild(dot);
+  });
+  panel.querySelector("#cancel").onclick = () => { slot.innerHTML = ""; };
+  goBtn.onclick = async () => {
+    goBtn.disabled = true;
+    goBtn.textContent = "Starting…";
+    try {
+      const s = await api("/sessions", { method: "POST", body: { student_id: auth.id, concept_id: concept.id, self_confidence: confidence } });
+      const detail = await api(`/concepts/${concept.id}`);
+      session = {
+        id: s.id, concept: detail, confidence, stage: "writing", question: null, selected: null, feedback: null,
+        progress: { answered: 0, correct: 0, percent: 0 }, summary: null, error: null,
+        writingQuestions: buildWritingQuestions(detail), writingAnswers: {},
+      };
+      go("session");
+    } catch (err) {
+      alert("Couldn't start the session: " + err.message);
+      goBtn.disabled = false;
+      goBtn.textContent = "Start questions";
+    }
+  };
+  slot.innerHTML = "";
+  slot.appendChild(panel);
+  panel.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/* ================= SESSION (quiz flow) ================= */
+/* confidence -> question -> check -> performance -> "more questions?" -> yes: next question / no: final page */
+const STAGES = [
+  { key: "writing", label: "Explain in your words" },
+  { key: "question", label: "Answer the questions" },
+  { key: "feedback", label: "Check & performance" },
+  { key: "summary", label: "Final results" },
+];
+
+function railStageKey() {
+  if (session.stage === "summary") return "summary";
+  if (session.stage === "feedback") return "feedback";
+  if (session.stage === "writing") return "writing";
+  return "question";
+}
+
+function renderStageRail() {
+  const idx = STAGES.findIndex(s => s.key === railStageKey());
+  const items = STAGES.map((s, i) => {
+    const state = i < idx ? "done" : i === idx ? "active" : "upcoming";
+    return `<li data-state="${state}"><span class="stage-rail__marker">${state === "done" ? "✓" : i + 1}</span><span>${s.label}</span></li>`;
+  }).join("");
+  const p = session.progress || { answered: 0, correct: 0 };
+  const tally = p.answered ? `<p class="stage-rail__attempt">Answered: ${p.answered}<br/>Correct: ${p.correct}</p>` : "";
+  return h(`<nav class="stage-rail"><ol>${items}</ol>${tally}</nav>`);
+}
+
+async function loadNextQuestion() {
+  const s = session;
+  s.stage = "loading"; s.error = null; s.retry = "next"; render();
+  try {
+    const r = await api(`/sessions/${s.id}/next-question`);
+    if (session !== s) return;              // learner navigated away meanwhile
+    s.progress = r.progress;
+    if (r.done) { await finishQuiz(); return; }   // nothing left to ask
+    s.question = r.question; s.selected = null; s.feedback = null;
+    s.stage = "question";
+  } catch (err) {
+    if (session !== s) return;
+    s.stage = "error"; s.error = err.message;
+  }
+  render();
+}
+
+async function finishQuiz() {
+  const s = session;
+  s.stage = "loading"; s.retry = "finish"; render();
+  try {
+    const summary = await api(`/sessions/${s.id}/finish`, { method: "POST" });
+    if (session !== s) return;
+    s.summary = summary; s.stage = "summary";
+  } catch (err) {
+    if (session !== s) return;
+    s.stage = "error"; s.error = err.message;
+  }
+  render();
+}
+
+function optionButton(letter, text, cls = "", tag = "") {
+  return h(`<button type="button" class="option-btn ${cls}"><span class="option-btn__letter">${letter}</span><span>${esc(text)}</span>${tag ? `<span class="option-btn__tag">${tag}</span>` : ""}</button>`);
+}
+const LETTERS = ["A", "B", "C", "D", "E", "F"];
+
+function scoreRow(label, percent) {
+  const el = h(`<div class="score-bars__row"><span>${label}</span>
+    <div class="score-bars__track"><div class="score-bars__fill" data-low="${percent < 60}" style="width:${percent}%"></div></div>
+    <span class="score-bars__value">${percent}%</span></div>`);
+  animateFill(el.querySelector(".score-bars__fill"), percent);
+  return el;
+}
+
+function renderSession(root) {
+  const wrap = h(`<div class="page session-page"></div>`);
+  wrap.appendChild(renderStageRail());
+
+  const main = h(`<div></div>`);
+  main.appendChild(h(`<header class="session-page__header">
+    <p class="eyebrow-free-label">${esc(session.concept.subject)}</p>
+    <h1>${esc(session.concept.name)}</h1>
+    <p class="session-page__objective">${esc(session.concept.learning_objective)}</p>
+  </header>`));
+
+  if (session.stage === "loading") {
+    main.appendChild(h(`<div class="loader-dots"><span></span><span></span><span></span></div>`));
+  }
+
+  if (session.stage === "error") {
+    const box = h(`<div><div class="error-banner">Something went wrong: ${esc(session.error)}</div>
+      <div style="display:flex;gap:.75rem;"><button class="btn btn-marker" id="retry">Try again</button><button class="btn btn-ghost" id="home">Back to concepts</button></div></div>`);
+    box.querySelector("#retry").onclick = () => session.retry === "finish" ? finishQuiz() : loadNextQuestion();
+    box.querySelector("#home").onclick = () => go("home");
+    main.appendChild(box);
+  }
+
+  /* ---- 2) writing stage: a few open-ended questions before the MCQs ---- */
+  if (session.stage === "writing") {
+    const qs = session.writingQuestions || [];
+    const answers = session.writingAnswers || (session.writingAnswers = {});
+    const block = h(`<section class="diagnosis__block">
+      <h2>Explain it in your own words</h2>
+      <p class="teach-form__instruction">Answer these ${qs.length} question${qs.length===1?"":"s"} from memory, in a few sentences each. Then you'll move on to a short multiple-choice check.</p>
+    </section>`);
+    const fields = qs.map((q, i) => {
+      const field = h(`<div class="field written-q">
+        <label>${i + 1}. ${esc(q)}</label>
+        <textarea rows="3" placeholder="Type your explanation here…"></textarea>
+      </div>`);
+      const ta = field.querySelector("textarea");
+      ta.value = answers[i] || "";
+      ta.oninput = () => { answers[i] = ta.value; updateContinueState(); };
+      block.appendChild(field);
+      return ta;
+    });
+    const actions = h(`<div class="teach-form__actions"><button class="btn btn-marker" id="continue-writing" disabled>Continue to the quiz</button></div>`);
+    const continueBtn = actions.querySelector("#continue-writing");
+    function updateContinueState() {
+      continueBtn.disabled = !fields.every(ta => ta.value.trim().length > 0);
+    }
+    updateContinueState();
+    continueBtn.onclick = () => {
+      session.writingAnswers = answers;
+      loadNextQuestion();
+    };
+    block.appendChild(actions);
+    main.appendChild(block);
+  }
+
+  /* ---- 3) a question, waiting for the learner's answer ---- */
+  if (session.stage === "question" && session.question) {
+    const q = session.question, p = session.progress;
+    const block = h(`<section class="diagnosis__block">
+      <span class="level-badge" data-level="${esc(q.level)}">${esc(q.level)} level</span>
+      <p class="quiz-meta">Question ${q.number} of ${q.total} · Score so far: ${p.correct}/${p.answered}</p>
+      <p class="challenge-card__question">${esc(q.question)}</p>
+      <div class="option-list"></div>
+      <div class="teach-form__actions"><button class="btn btn-marker" id="check" disabled>Check answer</button></div>
+    </section>`);
+    const list = block.querySelector(".option-list");
+    const checkBtn = block.querySelector("#check");
+    const buttons = q.options.map((text, i) => {
+      const b = optionButton(LETTERS[i], text);
+      b.onclick = () => {
+        session.selected = i;
+        buttons.forEach((x, j) => x.classList.toggle("is-selected", j === i));
+        checkBtn.disabled = false;
+      };
+      list.appendChild(b);
+      return b;
+    });
+    checkBtn.onclick = async () => {
+      if (session.selected === null) return;
+      const s = session;
+      checkBtn.disabled = true; checkBtn.textContent = "Checking…";
+      try {
+        const result = await api(`/sessions/${s.id}/answer`, { method: "POST", body: { question_id: q.id, selected_index: s.selected } });
+        if (session !== s) return;
+        s.feedback = result; s.progress = result.progress; s.stage = "feedback";
+        render();
+      } catch (err) {
+        alert("Couldn't check your answer: " + err.message);
+        checkBtn.disabled = false; checkBtn.textContent = "Check answer";
+      }
+    };
+    main.appendChild(block);
+  }
+
+  /* ---- 4) result of this answer + performance, then 5/6) "more questions?" ---- */
+  if (session.stage === "feedback" && session.question && session.feedback) {
+    const q = session.question, f = session.feedback, p = f.progress;
+    const block = h(`<section class="diagnosis__block"><h2>Your result</h2></section>`);
+    block.appendChild(h(`<p class="challenge-verdict ${f.is_correct ? "challenge-verdict--correct" : "challenge-verdict--incorrect"}">${f.is_correct ? "CORRECT" : "INCORRECT"}</p>`));
+    block.appendChild(h(`<p class="challenge-card__question">${esc(q.question)}</p>`));
+
+    const list = h(`<div class="option-list"></div>`);
+    q.options.forEach((text, i) => {
+      let cls = "", tag = "";
+      if (i === f.correct_index) { cls = "is-correct"; tag = i === f.selected_index ? "✓ your answer" : "✓ correct answer"; }
+      else if (i === f.selected_index) { cls = "is-wrong"; tag = "✗ your answer"; }
+      const b = optionButton(LETTERS[i], text, cls, tag);
+      b.disabled = true;
+      list.appendChild(b);
+    });
+    block.appendChild(list);
+    block.appendChild(h(`<div class="combined-answer"><strong>Why:</strong> ${esc(f.explanation)}</div>`));
+
+    const perf = h(`<div style="margin-top:1.1rem;"></div>`);
+    perf.appendChild(h(`<p class="quiz-meta">Performance so far: ${p.correct} of ${p.answered} correct</p>`));
+    perf.appendChild(scoreRow("Score", p.percent));
+    block.appendChild(perf);
+
+    const more = h(`<div class="more-detail-prompt"></div>`);
+    const row = h(`<div style="display:flex;gap:.75rem;flex-wrap:wrap;"></div>`);
+    if (f.has_more) {
+      more.appendChild(h(`<p>Would you like more questions?</p>`));
+      const yes = h(`<button class="btn btn-marker">Yes, next question</button>`);
+      const no = h(`<button class="btn btn-ghost">No, show my final results</button>`);
+      yes.onclick = () => loadNextQuestion();
+      no.onclick = () => finishQuiz();
+      row.appendChild(yes); row.appendChild(no);
+    } else {
+      more.appendChild(h(`<p>You've answered every question available for this topic.</p>`));
+      const fin = h(`<button class="btn btn-marker">See my final results</button>`);
+      fin.onclick = () => finishQuiz();
+      row.appendChild(fin);
+    }
+    more.appendChild(row);
+    block.appendChild(more);
+    main.appendChild(block);
+  }
+
+  /* ---- 8) final page ---- */
+  if (session.stage === "summary" && session.summary) {
+    const s = session.summary;
+    const verified = s.verdict === "VERIFIED";
+    const block = h(`<section class="diagnosis__block"><h2>Final results</h2></section>`);
+    block.appendChild(h(`<p class="challenge-verdict ${verified ? "challenge-verdict--correct" : "challenge-verdict--partial"}">${verified ? "STRONG UNDERSTANDING" : "NEEDS REVISION"}</p>`));
+
+    const scoreRowWrap = h(`<div class="final-score-row"></div>`);
+    scoreRowWrap.appendChild(buildRing(s.percent));
+    const scoreText = h(`<div><div class="final-score">${s.correct} / ${s.answered} <small>correct</small></div></div>`);
+    scoreRowWrap.appendChild(scoreText);
+    block.appendChild(scoreRowWrap);
+
+    block.appendChild(h(`<p class="diagnosis__status">${verified
+      ? "Nicely done — this topic is marked as verified in your profile."
+      : "Review the correct answers below, then try this topic again. Your result is saved on your dashboard."}</p>`));
+    main.appendChild(block);
+
+    /* ---- combined final answer: written explanations + MCQ score summed up ---- */
+    const wq = session.writingQuestions || [];
+    const wa = session.writingAnswers || {};
+    const writtenCount = wq.filter((_, i) => (wa[i] || "").trim().length > 0).length;
+
+    const finalAnswer = h(`<section class="diagnosis__block"><h2>Your final answer</h2></section>`);
+    finalAnswer.appendChild(h(`<p class="combined-answer"><strong>Summed up:</strong> You wrote ${writtenCount} of ${wq.length} explanations in your own words, then answered ${s.answered} multiple-choice question${s.answered === 1 ? "" : "s"} and got ${s.correct} correct (${s.percent}%). ${verified
+      ? `Together, that's a strong, verified understanding of ${esc(session.concept.name)}.`
+      : `Together, that shows real progress on ${esc(session.concept.name)}, with a few gaps still worth revising -- see the notes below.`}</p>`));
+    main.appendChild(finalAnswer);
+
+    /* ---- performance details ---- */
+    const perf = h(`<section class="diagnosis__block"><h2>Performance details</h2></section>`);
+    perf.appendChild(h(`<p class="quiz-meta">Self-rated confidence before starting: ${session.confidence ?? "--"}/5</p>`));
+    perf.appendChild(scoreRow("Written questions completed", wq.length ? Math.round(100 * writtenCount / wq.length) : 0));
+    perf.appendChild(scoreRow("MCQ score", s.percent));
+    perf.appendChild(scoreRow("Overall result", verified ? 100 : s.percent));
+    main.appendChild(perf);
+
+    /* ---- written answers review ---- */
+    const writtenRev = h(`<section class="diagnosis__block"><h2>Your written answers</h2></section>`);
+    if (wq.length) {
+      const wul = h(`<ul class="review-list"></ul>`);
+      wq.forEach((q, i) => {
+        const given = (wa[i] || "").trim();
+        wul.appendChild(h(`<li data-correct="${given.length > 0}">
+          <div class="review-list__q">${i + 1}. ${esc(q)}</div>
+          <div class="review-list__line written-answer">${esc(given || "(no answer given)")}</div>
+        </li>`));
+      });
+      writtenRev.appendChild(wul);
+    } else {
+      writtenRev.appendChild(h(`<p class="progress-page__empty">No written questions for this session.</p>`));
+    }
+    main.appendChild(writtenRev);
+
+    const rev = h(`<section class="diagnosis__block"><h2>Questions and correct answers</h2></section>`);
+    const ul = h(`<ul class="review-list"></ul>`);
+    s.review.forEach((r, i) => {
+      ul.appendChild(h(`<li data-correct="${r.is_correct}">
+        <div class="review-list__q">${i + 1}. ${esc(r.question)}</div>
+        <div class="review-list__line">Your answer: <strong>${esc(r.options[r.selected_index])}</strong> ${r.is_correct ? "✓" : "✗"}</div>
+        ${r.is_correct ? "" : `<div class="review-list__line">Correct answer: <strong>${esc(r.options[r.correct_index])}</strong></div>`}
+        <div class="review-list__why">${esc(r.explanation)}</div>
+      </li>`));
+    });
+    rev.appendChild(ul);
+    main.appendChild(rev);
+
+    const actions = h(`<div class="final-actions"></div>`);
+    const homeBtn = h(`<button class="btn btn-marker">Back to home</button>`);
+    homeBtn.onclick = () => go("home");
+    const dashBtn = h(`<button class="btn btn-ghost">See my dashboard</button>`);
+    dashBtn.onclick = () => go("dashboard");
+    actions.appendChild(homeBtn); actions.appendChild(dashBtn);
+    main.appendChild(actions);
+  }
+
+  wrap.appendChild(main);
+  root.appendChild(wrap);
+}
+
+/* ================= DASHBOARD ================= */
+async function renderDashboard(root) {
+  const wrap = h(`<div class="page dashboard-page">
+    <h1>Your dashboard</h1>
+    <div class="dash-tabs">
+      <button data-tab="profile">Profile</button>
+      <button data-tab="performance">Performance</button>
+    </div>
+    <div id="tab-content"></div>
+  </div>`);
+  root.appendChild(wrap);
+
+  wrap.querySelectorAll(".dash-tabs button").forEach(btn => {
+    btn.classList.toggle("is-active", btn.dataset.tab === dashTab);
+    btn.onclick = () => { dashTab = btn.dataset.tab; render(); };
+  });
+
+  const content = wrap.querySelector("#tab-content");
+  if (dashTab === "profile") await renderProfileTab(content);
+  else if (dashTab === "performance") await renderPerformanceTab(content);
+}
+
+async function renderProfileTab(content) {
+  try {
+    const student = await api(`/students/${auth.id}`);
+    const card = h(`<div class="profile-card">
+      <div class="profile-card__avatar">${esc(initials(student.name))}</div>
+      <div class="profile-card__row"><span class="profile-card__label">Name</span><span>${esc(student.name)}</span></div>
+      <div class="profile-card__row"><span class="profile-card__label">Username</span><span>${esc(student.username)}</span></div>
+      <div class="profile-card__row"><span class="profile-card__label">Student ID</span><span>${esc(student.student_code || "--")}</span></div>
+      <div class="profile-card__row"><span class="profile-card__label">Member since</span><span>${new Date(student.created_at).toLocaleDateString()}</span></div>
+    </div>`);
+    content.appendChild(card);
+    const logoutBtn = h(`<button class="btn btn-ghost" style="margin-top:1.2rem;">Log out</button>`);
+    logoutBtn.onclick = logout;
+    content.appendChild(logoutBtn);
+  } catch (err) {
+    content.appendChild(h(`<div class="error-banner">Couldn't load your profile -- ${esc(err.message)}</div>`));
+  }
+}
+
+const STATUS_LABEL = { VERIFIED: "Verified", NEEDS_REINFORCEMENT: "Needs revision", IN_PROGRESS: "In progress" };
+
+async function renderPerformanceTab(content) {
+  try {
+    const [profiles, weakAreas] = await Promise.all([api(`/students/${auth.id}/progress`), api(`/students/${auth.id}/weak-areas`)]);
+    if (!profiles.length) {
+      content.appendChild(h(`<p class="progress-page__empty">You haven't taught anything yet -- head to Concepts to get started.</p>`));
+      return;
+    }
+    const ledger = h(`<div class="ledger"></div>`);
+    const fillsToAnimate = [];
+    profiles.forEach(p => {
+      const row = h(`<div class="ledger__row">
+        <div class="ledger__name"><span>${esc(p.concept_name)}</span>
+          <span class="ledger__status ledger__status--${p.verification_status.toLowerCase()}">${STATUS_LABEL[p.verification_status] || p.verification_status}</span></div>
+        <div class="ledger__bar"><div class="ledger__fill" style="width:${Math.round(p.understanding_score)}%"></div></div>
+        <span class="ledger__score">${Math.round(p.understanding_score)}%</span>
+        <span class="ledger__attempts">${p.attempts_count} attempt${p.attempts_count===1?"":"s"}</span>
+      </div>`);
+      fillsToAnimate.push([row.querySelector(".ledger__fill"), Math.round(p.understanding_score)]);
+      ledger.appendChild(row);
+    });
+    content.appendChild(ledger);
+    fillsToAnimate.forEach(([el, pct]) => animateFill(el, pct));
 
     const section = h(`<section class="weak-areas"><h2>Revision list</h2></section>`);
     if (!weakAreas.length) {
